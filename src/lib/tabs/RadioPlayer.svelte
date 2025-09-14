@@ -5,6 +5,10 @@
   let currentStation = $state("");
   let streamInfo = $state<{title?: string, bitrate?: string, format?: string}>({});
   let audioElement: HTMLAudioElement | null = null;
+  let audioContext: AudioContext | null = null;
+  let analyser: AnalyserNode | null = null;
+  let audioDataArray: Uint8Array | null = null;
+  let currentRequestId = 0; // Track current request to cancel old ones
   let isRetrying = $state(false);
   let retryCount = $state(0);
   let maxRetries = 2;
@@ -108,14 +112,24 @@
 
   async function playRadio(retryWithFallback: boolean = false) {
     if (!radioUrl.trim()) {
-      console.log("ALERT:", arguments[0]); alert("Please enter a radio stream URL");
+      console.log("Radio Error: Please enter a radio stream URL");
       return;
     }
 
+    // Increment request ID to invalidate previous requests
+    currentRequestId++;
+    const requestId = currentRequestId;
+    
     // Stop current playback first
     if (audioElement) {
       stopRadio();
       await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
+    }
+    
+    // Check if this request is still valid
+    if (requestId !== currentRequestId) {
+      console.log('Radio request cancelled (new request started)');
+      return;
     }
 
     try {
@@ -128,7 +142,7 @@
       audioElement.crossOrigin = "anonymous";
       
       // Set up event listeners before setting src
-      setupAudioEventListeners(retryWithFallback);
+      setupAudioEventListeners(retryWithFallback, requestId);
       
       // Set initial state
       currentStation = retryWithFallback ? "Trying fallback..." : "Connecting...";
@@ -145,60 +159,95 @@
         }
       }, 10000); // 10 second timeout
       
+      // Check if request is still valid before playing
+      if (requestId !== currentRequestId) {
+        clearTimeout(timeoutId);
+        console.log('Radio request cancelled before play');
+        return;
+      }
+      
       // Try to play with proper error handling
       const playPromise = audioElement.play();
       
       if (playPromise !== undefined) {
         try {
           await playPromise;
+          
+          // Check again after async operation
+          if (requestId !== currentRequestId) {
+            clearTimeout(timeoutId);
+            console.log('Radio request cancelled after play');
+            if (audioElement) audioElement.pause();
+            return;
+          }
+          
           clearTimeout(timeoutId);
           isPlaying = true;
         } catch (error) {
           clearTimeout(timeoutId);
-          handlePlayError(error, retryWithFallback);
+          if (requestId === currentRequestId) {
+            handlePlayError(error, retryWithFallback, requestId);
+          }
         }
       }
 
     } catch (error) {
       console.error('Radio setup error:', error);
-      handlePlayError(error, retryWithFallback);
+      if (requestId === currentRequestId) {
+        handlePlayError(error, retryWithFallback, requestId);
+      }
     }
   }
 
-  function setupAudioEventListeners(isRetry: boolean = false) {
+  function setupAudioEventListeners(isRetry: boolean = false, requestId: number = 0) {
     if (!audioElement) return;
     
     audioElement.addEventListener('loadstart', () => {
-      currentStation = isRetry ? "Retrying..." : "Loading...";
+      if (requestId === 0 || requestId === currentRequestId) {
+        currentStation = isRetry ? "Retrying..." : "Loading...";
+      }
     });
     
     audioElement.addEventListener('canplay', () => {
-      currentStation = getStationName(radioUrl) || "Unknown Station";
-      streamInfo = {
-        title: "Live Stream",
-        bitrate: "Unknown",
-        format: getAudioFormat(radioUrl)
-      };
+      if (requestId === 0 || requestId === currentRequestId) {
+        currentStation = getStationName(radioUrl) || "Unknown Station";
+        streamInfo = {
+          title: "Live Stream",
+          bitrate: "Unknown",
+          format: getAudioFormat(radioUrl)
+        };
+        
+        // Setup audio analysis for Butterchurn
+        setupAudioAnalysis();
+      }
     });
     
     audioElement.addEventListener('error', (e) => {
       const error = e.target?.error;
       console.error('Audio element error:', error);
-      handleAudioError(error, isRetry);
+      handleAudioError(error, isRetry, requestId);
     });
     
     audioElement.addEventListener('ended', () => {
       console.log('Stream ended');
-      resetPlayerState();
+      if (requestId === 0 || requestId === currentRequestId) {
+        resetPlayerState();
+      }
     });
     
     audioElement.addEventListener('abort', () => {
       console.log('Audio loading aborted');
-      if (!isRetry) {
-        // Try fallback on abort
-        setTimeout(() => playRadio(true), 1000);
-      } else {
-        resetPlayerState();
+      if (requestId === 0 || requestId === currentRequestId) {
+        if (!isRetry) {
+          // Try fallback on abort
+          setTimeout(() => {
+            if (requestId === 0 || requestId === currentRequestId) {
+              playRadio(true);
+            }
+          }, 1000);
+        } else {
+          resetPlayerState();
+        }
       }
     });
     
@@ -248,8 +297,14 @@
     return url;
   }
   
-  function handlePlayError(error: any, wasRetry: boolean = false) {
+  function handlePlayError(error: any, wasRetry: boolean = false, requestId: number = 0) {
     console.error('Play error:', error);
+    
+    // Check if this error is for the current request
+    if (requestId !== currentRequestId) {
+      console.log('Ignoring error for cancelled request');
+      return;
+    }
     
     let userMessage = "Failed to play stream: ";
     let shouldRetry = false;
@@ -273,15 +328,26 @@
     // Try fallback URL if this was the first attempt
     if (shouldRetry) {
       console.log('Attempting fallback stream...');
-      setTimeout(() => playRadio(true), 1500);
+      setTimeout(() => {
+        // Only retry if this is still the current request
+        if (requestId === currentRequestId) {
+          playRadio(true);
+        }
+      }, 1500);
       return;
     }
     
-    console.log("ALERT:", arguments[0]); alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
+    console.log("Radio Play Error:", userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
-  function handleAudioError(error: any, wasRetry: boolean = false) {
+  function handleAudioError(error: any, wasRetry: boolean = false, requestId: number = 0) {
+    // Check if this error is for the current request
+    if (requestId !== 0 && requestId !== currentRequestId) {
+      console.log('Ignoring media error for cancelled request');
+      return;
+    }
+    
     let userMessage = "Stream error: ";
     let shouldRetry = false;
     
@@ -313,11 +379,16 @@
     // Try fallback URL if this was the first attempt and we have a fallback
     if (shouldRetry) {
       console.log('Media error, attempting fallback stream...');
-      setTimeout(() => playRadio(true), 2000);
+      setTimeout(() => {
+        // Only retry if this is still the current request
+        if (requestId === 0 || requestId === currentRequestId) {
+          playRadio(true);
+        }
+      }, 2000);
       return;
     }
     
-    console.log("ALERT:", arguments[0]); alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
+    console.log("Radio Media Error:", userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
@@ -342,6 +413,24 @@
         console.warn('Error stopping audio:', e);
       }
     }
+    
+    // Clean up audio analysis
+    if (audioContext) {
+      try {
+        audioContext.close();
+      } catch (e) {
+        console.warn('Error closing audio context:', e);
+      }
+      audioContext = null;
+    }
+    analyser = null;
+    audioDataArray = null;
+    
+    // Notify parent about audio stop
+    if (typeof window !== 'undefined' && window.setAudioAnalyzer) {
+      window.setAudioAnalyzer(null, null);
+    }
+    
     resetPlayerState();
   }
 
@@ -355,6 +444,11 @@
     // Reset circuit breaker when user manually selects a new station
     consecutiveFailures = 0;
     isBlocked = false;
+    
+    // Stop any current playback and cancel pending requests
+    stopRadio();
+    
+    // Set new URL and play
     radioUrl = stream.url;
     await playRadio();
   }
@@ -371,6 +465,32 @@
     }
   }
 
+  function setupAudioAnalysis() {
+    if (!audioElement || audioContext) return;
+    
+    try {
+      // Create audio context and analyser
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      
+      // Create audio source from element
+      const source = audioContext.createMediaElementSource(audioElement);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+      
+      // Create data array for frequency data
+      audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+      
+      // Notify parent component about audio setup
+      if (typeof window !== 'undefined' && window.setAudioAnalyzer) {
+        window.setAudioAnalyzer(analyser, audioDataArray);
+      }
+    } catch (error) {
+      console.warn('Failed to setup audio analysis:', error);
+    }
+  }
+  
   function getAudioFormat(url: string): string {
     if (url.includes('.mp3') || url.includes('mp3')) return 'MP3';
     if (url.includes('.aac') || url.includes('aac')) return 'AAC';

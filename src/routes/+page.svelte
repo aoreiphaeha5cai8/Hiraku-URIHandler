@@ -14,6 +14,9 @@
   let butterchurnCanvas: HTMLCanvasElement | null = null;
   let butterchurnInstance: any = null;
   let animationFrameId: number | null = null;
+  let audioAnalyser: AnalyserNode | null = null;
+  let audioDataArray: Uint8Array | null = null;
+  let isAudioConnected = $state(false);
 
   // Tab definitions
   const tabs = [
@@ -133,12 +136,21 @@
       if (theme !== 'butterchurn') return;
       
       try {
-        // Generate some fake audio data for visualization
-        const audioData = new Uint8Array(1024);
-        for (let i = 0; i < 1024; i++) {
-          audioData[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 128 + 128;
+        let audioData: Uint8Array;
+        
+        if (isAudioConnected && audioAnalyser && audioDataArray) {
+          // Use real audio data from radio player
+          audioAnalyser.getByteFrequencyData(audioDataArray);
+          audioData = audioDataArray;
+        } else {
+          // Generate fake audio data as fallback
+          audioData = new Uint8Array(1024);
+          for (let i = 0; i < 1024; i++) {
+            audioData[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 64 + 64;
+          }
         }
         
+        // Use same data for both time and frequency domain
         butterchurnInstance.render(audioData, audioData);
         animationFrameId = requestAnimationFrame(animate);
       } catch (error) {
@@ -155,15 +167,25 @@
     const animate = () => {
       if (theme !== 'butterchurn' || !butterchurnCanvas) return;
       
-      hue = (hue + 0.5) % 360;
+      hue = (hue + 1) % 360;
       
+      // More dynamic animation that responds to audio if available
+      let intensity = 1;
+      if (isAudioConnected && audioAnalyser && audioDataArray) {
+        audioAnalyser.getByteFrequencyData(audioDataArray);
+        // Calculate average intensity from audio
+        const sum = audioDataArray.reduce((a, b) => a + b, 0);
+        intensity = 1 + (sum / audioDataArray.length) / 128;
+      }
+      
+      const time = Date.now() * 0.001;
       butterchurnCanvas.style.background = `
-        radial-gradient(circle at ${50 + 30 * Math.sin(Date.now() * 0.001)}% ${50 + 20 * Math.cos(Date.now() * 0.0015)}%, 
-                       hsla(${hue}, 70%, 60%, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at ${50 + 20 * Math.cos(Date.now() * 0.002)}% ${50 + 30 * Math.sin(Date.now() * 0.0012)}%, 
-                       hsla(${(hue + 120) % 360}, 70%, 60%, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at ${50 + 25 * Math.sin(Date.now() * 0.0018)}% ${50 + 25 * Math.cos(Date.now() * 0.0008)}%, 
-                       hsla(${(hue + 240) % 360}, 70%, 60%, 0.3) 0%, transparent 50%)
+        radial-gradient(circle at ${50 + 30 * intensity * Math.sin(time)}% ${50 + 20 * intensity * Math.cos(time * 1.5)}%, 
+                       hsla(${hue}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%),
+        radial-gradient(circle at ${50 + 20 * intensity * Math.cos(time * 2)}% ${50 + 30 * intensity * Math.sin(time * 1.2)}%, 
+                       hsla(${(hue + 120) % 360}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%),
+        radial-gradient(circle at ${50 + 25 * intensity * Math.sin(time * 1.8)}% ${50 + 25 * intensity * Math.cos(time * 0.8)}%, 
+                       hsla(${(hue + 240) % 360}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%)
       `;
       
       animationFrameId = requestAnimationFrame(animate);
@@ -214,6 +236,14 @@
         butterchurnInstance.setRendererSize(window.innerWidth, window.innerHeight);
       }
     });
+    
+    // Setup global function for audio analyzer connection
+    window.setAudioAnalyzer = (analyser: AnalyserNode | null, dataArray: Uint8Array | null) => {
+      audioAnalyser = analyser;
+      audioDataArray = dataArray;
+      isAudioConnected = !!analyser;
+      console.log('Audio analyzer', analyser ? 'connected' : 'disconnected');
+    };
     
     // Cleanup on page unload
     window.addEventListener('beforeunload', cleanupButterchurn);
@@ -311,8 +341,8 @@
 
   :global([data-theme="butterchurn"]) {
     /* Butterchurn glassmorphism theme */
-    --primary-color: #ffffff;
-    --primary-hover: rgba(255, 255, 255, 0.9);
+    --primary-color: #4fc3f7;
+    --primary-hover: rgba(79, 195, 247, 0.9);
     --success-color: #00ff88;
     --success-hover: rgba(0, 255, 136, 0.9);
     --success-bg: rgba(0, 255, 136, 0.1);
@@ -321,17 +351,17 @@
     --warning-color: #ffeb3b;
     --info-bg: rgba(33, 150, 243, 0.1);
     --text-color: rgba(255, 255, 255, 0.95);
-    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-secondary: rgba(255, 255, 255, 0.8);
     --bg-color: transparent;
-    --card-bg: rgba(255, 255, 255, 0.1);
-    --input-bg: rgba(255, 255, 255, 0.05);
-    --secondary-bg: rgba(255, 255, 255, 0.08);
-    --border-color: rgba(255, 255, 255, 0.2);
-    --hover-bg: rgba(255, 255, 255, 0.15);
-    --code-bg: rgba(0, 0, 0, 0.3);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    --glass-backdrop: blur(10px);
-    --glass-border: rgba(255, 255, 255, 0.18);
+    --card-bg: rgba(0, 0, 0, 0.4);
+    --input-bg: rgba(0, 0, 0, 0.3);
+    --secondary-bg: rgba(0, 0, 0, 0.35);
+    --border-color: rgba(255, 255, 255, 0.3);
+    --hover-bg: rgba(0, 0, 0, 0.5);
+    --code-bg: rgba(0, 0, 0, 0.6);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --glass-backdrop: blur(8px);
+    --glass-border: rgba(255, 255, 255, 0.2);
   }
 
   :global(*) {
@@ -350,17 +380,19 @@
     overflow-x: hidden;
   }
 
-  :global([data-theme="butterchurn"] *) {
-    backdrop-filter: var(--glass-backdrop, none);
-    -webkit-backdrop-filter: var(--glass-backdrop, none);
+  /* Butterchurn background canvas should not be blurred */
+  :global([data-theme="butterchurn"] canvas) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
   }
 
   :global([data-theme="butterchurn"] .app-header),
   :global([data-theme="butterchurn"] .app-main),
   :global([data-theme="butterchurn"] .app-footer) {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
   }
@@ -368,20 +400,20 @@
   :global([data-theme="butterchurn"] input),
   :global([data-theme="butterchurn"] select),
   :global([data-theme="butterchurn"] button) {
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
     color: rgba(255, 255, 255, 0.95) !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
   :global([data-theme="butterchurn"] input:focus),
   :global([data-theme="butterchurn"] select:focus),
   :global([data-theme="butterchurn"] button:hover) {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     transform: translateY(-1px);
   }
 
