@@ -7,90 +7,182 @@
   let audioElement: HTMLAudioElement | null = null;
 
   const popularStreams = [
-    { name: "Radio Swiss Jazz", url: "https://stream.srg-ssr.ch/rsjd/mp3_128.m3u" },
-    { name: "Radio Swiss Classic", url: "https://stream.srg-ssr.ch/rsc_de/mp3_128.m3u" },
-    { name: "SomaFM Groove Salad", url: "https://somafm.com/groovesalad256.pls" },
-    { name: "SomaFM Ambient", url: "https://somafm.com/dronezone256.pls" },
+    { name: "Radio Swiss Jazz", url: "https://stream.srg-ssr.ch/rsjd/mp3_128" },
+    { name: "Radio Swiss Classic", url: "https://stream.srg-ssr.ch/rsc_de/mp3_128" },
+    { name: "SomaFM Groove Salad", url: "https://ice1.somafm.com/groovesalad-256-mp3" },
+    { name: "SomaFM Drone Zone", url: "https://ice1.somafm.com/dronezone-256-mp3" },
     { name: "Radio Paradise", url: "https://stream.radioparadise.com/aac-320" },
-    { name: "Chillout Radio", url: "https://streams.fluxfm.de/Chillout/mp3-320" }
+    { name: "Venice Classic Radio", url: "https://109.123.116.202:8022/stream" }
   ];
 
-  function playRadio() {
+  async function playRadio() {
     if (!radioUrl.trim()) {
       alert("Please enter a radio stream URL");
       return;
     }
 
-    try {
-      if (audioElement) {
-        audioElement.pause();
-        audioElement = null;
-      }
+    // Stop current playback first
+    if (audioElement) {
+      stopRadio();
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+    }
 
+    try {
+      const url = await resolveStreamUrl(radioUrl.trim());
+      
       audioElement = new Audio();
       audioElement.volume = volume / 100;
-      audioElement.crossOrigin = "anonymous"; // For CORS
+      audioElement.preload = "none";
       
-      audioElement.addEventListener('loadstart', () => {
-        currentStation = "Loading...";
-        streamInfo = { title: "Connecting...", format: getAudioFormat(radioUrl) };
-      });
+      // Set up event listeners before setting src
+      setupAudioEventListeners();
       
-      audioElement.addEventListener('canplay', () => {
-        currentStation = getStationName(radioUrl) || "Unknown Station";
-        streamInfo = {
-          title: "Live Stream",
-          bitrate: "Unknown",
-          format: getAudioFormat(radioUrl)
-        };
-      });
+      // Set initial state
+      currentStation = "Connecting...";
+      streamInfo = { title: "Loading...", format: getAudioFormat(url) };
       
-      audioElement.addEventListener('error', (e) => {
-        console.error('Audio playback error:', e);
-        const errorMsg = e.target?.error ? 
-          `Error playing stream: ${e.target.error.code} - ${getErrorMessage(e.target.error.code)}` :
-          `Error playing stream: ${e.type}`;
-        alert(errorMsg);
-        isPlaying = false;
-        currentStation = "";
-        streamInfo = {};
-      });
-      
-      audioElement.addEventListener('ended', () => {
-        isPlaying = false;
-        currentStation = "";
-        streamInfo = {};
-      });
-
-      // Set the source and play
-      audioElement.src = radioUrl.trim();
+      // Set source and load
+      audioElement.src = url;
       audioElement.load();
       
-      audioElement.play().then(() => {
-        isPlaying = true;
-      }).catch(error => {
-        console.error('Play promise rejected:', error);
-        alert(`Failed to start playback: ${error.message || 'Unknown error'}`);
-        isPlaying = false;
-        currentStation = "";
-        streamInfo = {};
-      });
+      // Try to play with proper error handling
+      const playPromise = audioElement.play();
+      
+      if (playPromise !== undefined) {
+        try {
+          await playPromise;
+          isPlaying = true;
+        } catch (error) {
+          handlePlayError(error);
+        }
+      }
 
     } catch (error) {
-      console.error('Radio playback error:', error);
-      alert(`Error: ${error.message || error}`);
-      isPlaying = false;
+      console.error('Radio setup error:', error);
+      handlePlayError(error);
     }
+  }
+
+  function setupAudioEventListeners() {
+    if (!audioElement) return;
+    
+    audioElement.addEventListener('loadstart', () => {
+      currentStation = "Loading...";
+    });
+    
+    audioElement.addEventListener('canplay', () => {
+      currentStation = getStationName(radioUrl) || "Unknown Station";
+      streamInfo = {
+        title: "Live Stream",
+        bitrate: "Unknown",
+        format: getAudioFormat(radioUrl)
+      };
+    });
+    
+    audioElement.addEventListener('error', (e) => {
+      const error = e.target?.error;
+      console.error('Audio element error:', error);
+      handleAudioError(error);
+    });
+    
+    audioElement.addEventListener('ended', () => {
+      resetPlayerState();
+    });
+    
+    audioElement.addEventListener('abort', () => {
+      console.log('Audio loading aborted');
+      resetPlayerState();
+    });
+    
+    audioElement.addEventListener('stalled', () => {
+      console.warn('Audio stream stalled');
+    });
+  }
+  
+  async function resolveStreamUrl(url: string): Promise<string> {
+    // Handle playlist files
+    if (url.includes('.m3u') || url.includes('.pls')) {
+      try {
+        // For demo purposes, we'll try to extract direct stream URLs
+        // In a real implementation, you'd parse the playlist file
+        if (url.includes('srg-ssr.ch')) {
+          return url.replace('.m3u', '');
+        }
+        if (url.includes('somafm.com') && url.includes('.pls')) {
+          return url.replace('.pls', '');
+        }
+      } catch (e) {
+        console.warn('Could not resolve playlist URL, using original:', e);
+      }
+    }
+    return url;
+  }
+  
+  function handlePlayError(error: any) {
+    console.error('Play error:', error);
+    
+    let userMessage = "Failed to play stream: ";
+    
+    if (error.name === 'NotAllowedError') {
+      userMessage += "Browser requires user interaction to play audio. Please click the Play button.";
+    } else if (error.name === 'NotSupportedError') {
+      userMessage += "This audio format is not supported by your browser.";
+    } else if (error.name === 'AbortError') {
+      userMessage += "Playback was interrupted. Please try again.";
+    } else {
+      userMessage += error.message || "Unknown error occurred.";
+    }
+    
+    alert(userMessage);
+    resetPlayerState();
+  }
+  
+  function handleAudioError(error: any) {
+    let userMessage = "Stream error: ";
+    
+    if (error) {
+      switch (error.code) {
+        case 1:
+          userMessage += "Loading was aborted.";
+          break;
+        case 2:
+          userMessage += "Network error - check your connection.";
+          break;
+        case 3:
+          userMessage += "Audio format not supported.";
+          break;
+        case 4:
+          userMessage += "Stream source not found or not accessible.";
+          break;
+        default:
+          userMessage += "Unknown error occurred.";
+      }
+    } else {
+      userMessage += "Unable to load stream.";
+    }
+    
+    alert(userMessage);
+    resetPlayerState();
+  }
+  
+  function resetPlayerState() {
+    isPlaying = false;
+    currentStation = "";
+    streamInfo = {};
   }
 
   function stopRadio() {
     if (audioElement) {
-      audioElement.pause();
-      audioElement = null;
+      try {
+        audioElement.pause();
+        audioElement.src = "";
+        audioElement.load(); // Reset the audio element
+        audioElement = null;
+      } catch (e) {
+        console.warn('Error stopping audio:', e);
+      }
     }
-    isPlaying = false;
-    currentStation = "";
-    streamInfo = {};
+    resetPlayerState();
   }
 
   function updateVolume() {
@@ -99,9 +191,9 @@
     }
   }
 
-  function selectPreset(stream: { name: string, url: string }) {
+  async function selectPreset(stream: { name: string, url: string }) {
     radioUrl = stream.url;
-    playRadio();
+    await playRadio();
   }
 
   function getStationName(url: string): string {
@@ -126,15 +218,7 @@
     return 'Audio Stream';
   }
 
-  function getErrorMessage(errorCode: number): string {
-    switch (errorCode) {
-      case 1: return 'Aborted';
-      case 2: return 'Network error';
-      case 3: return 'Decode error';
-      case 4: return 'Source not supported';
-      default: return 'Unknown error';
-    }
-  }
+
 
   // Update volume when slider changes
   $effect(() => {
@@ -152,14 +236,14 @@
     <div class="url-input-section">
       <div class="radio-url-row">
         <input 
-          type="url" 
-          bind:value={radioUrl} 
-          placeholder="Enter radio stream URL (e.g., http://stream.example.com:8000/live)" 
-          class="radio-url-input"
-          onkeydown={(e) => e.key === 'Enter' && playRadio()}
-        />
+            type="url" 
+            bind:value={radioUrl} 
+            placeholder="Enter radio stream URL (e.g., http://stream.example.com:8000/live)" 
+            class="radio-url-input"
+            onkeydown={async (e) => e.key === 'Enter' && await playRadio()}
+          />
         <button 
-          onclick={playRadio} 
+          onclick={() => playRadio()} 
           disabled={!radioUrl.trim() || isPlaying} 
           class="play-button"
         >
@@ -227,7 +311,7 @@
       <div class="stream-presets">
         {#each popularStreams as stream}
           <button 
-            onclick={() => selectPreset(stream)} 
+            onclick={async () => await selectPreset(stream)} 
             class="preset-button"
             disabled={isPlaying}
           >
