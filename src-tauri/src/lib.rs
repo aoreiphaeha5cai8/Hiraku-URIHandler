@@ -22,6 +22,15 @@ struct DnsResolution {
     ttl: Option<u32>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct GeolocationResult {
+    ip: String,
+    country: Option<String>,
+    city: Option<String>,
+    region: Option<String>,
+    org: Option<String>,
+}
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -76,6 +85,60 @@ async fn resolve_dns(hostname: String) -> Result<Vec<DnsResolution>, String> {
     }
 
     Ok(results)
+}
+
+#[tauri::command]
+async fn whois_lookup(domain: String) -> Result<String, String> {
+    // For now, return a mock response since external WHOIS tools may not be available
+    // In a real implementation, you would use a WHOIS client or call external tools
+    let mock_whois = format!(
+        "Domain Name: {}\n\nThis is a mock WHOIS response.\n\nIn a real implementation, this would contain:\n- Registrar information\n- Registration dates\n- Name servers\n- Registrant contact info\n- Administrative contact\n- Technical contact\n\nNote: This is a demonstration. Real WHOIS data would require\nintegration with WHOIS servers or external APIs.",
+        domain.to_uppercase()
+    );
+    
+    // Simulate some processing time
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    
+    Ok(mock_whois)
+}
+
+#[tauri::command]
+async fn geoip_lookup(ip: String) -> Result<GeolocationResult, String> {
+    // Validate IP format (basic validation)
+    if !ip.chars().all(|c| c.is_numeric() || c == '.') {
+        return Err("Invalid IP address format".to_string());
+    }
+    
+    // For demonstration, return mock data based on common public IPs
+    // In a real implementation, you would use a GeoIP service/database
+    let result = match ip.as_str() {
+        "8.8.8.8" => GeolocationResult {
+            ip: ip.clone(),
+            country: Some("United States".to_string()),
+            city: Some("Mountain View".to_string()),
+            region: Some("California".to_string()),
+            org: Some("Google LLC".to_string()),
+        },
+        "1.1.1.1" => GeolocationResult {
+            ip: ip.clone(),
+            country: Some("United States".to_string()),
+            city: Some("San Francisco".to_string()),
+            region: Some("California".to_string()),
+            org: Some("Cloudflare, Inc.".to_string()),
+        },
+        _ => GeolocationResult {
+            ip: ip.clone(),
+            country: Some("Unknown".to_string()),
+            city: Some("This is a mock geolocation service".to_string()),
+            region: Some("Real implementation would use GeoIP database".to_string()),
+            org: Some("Demo Organization".to_string()),
+        },
+    };
+    
+    // Simulate some processing time
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    
+    Ok(result)
 }
 
 #[tauri::command]
@@ -144,7 +207,7 @@ async fn make_http_request(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, make_http_request, resolve_dns])
+        .invoke_handler(tauri::generate_handler![greet, make_http_request, resolve_dns, whois_lookup, geoip_lookup])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

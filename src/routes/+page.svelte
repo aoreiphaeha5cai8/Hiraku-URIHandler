@@ -15,6 +15,14 @@
   let dnsHostname = $state("");
   let dnsResult = $state<Array<{hostname: string, ip_addresses: string[], record_type: string, ttl?: number}>>([]);
   let isDnsLoading = $state(false);
+  let urlToClean = $state("");
+  let cleanedUrl = $state("");
+  let whoisDomain = $state("");
+  let whoisResult = $state("");
+  let isWhoisLoading = $state(false);
+  let geoIp = $state("");
+  let geoResult = $state<{ip: string, country?: string, city?: string, region?: string, org?: string} | null>(null);
+  let isGeoLoading = $state(false);
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
   
@@ -212,6 +220,119 @@
       isDnsLoading = false;
     }
   }
+
+  function cleanUrl(event: Event) {
+    event.preventDefault();
+    
+    if (!urlToClean.trim()) {
+      cleanedUrl = "";
+      return;
+    }
+
+    try {
+      const url = new URL(urlToClean.trim());
+      
+      // List of common tracking parameters to remove
+      const trackingParams = [
+        // UTM parameters
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        // Facebook tracking
+        'fbclid', 'fb_action_ids', 'fb_action_types', 'fb_ref', 'fb_source',
+        // Google tracking
+        'gclid', 'gclsrc', 'dclid', 'gbraid', 'wbraid',
+        // Twitter tracking
+        'twclid', 'twttr',
+        // LinkedIn tracking
+        'li_fat_id',
+        // TikTok tracking
+        'ttclid',
+        // Microsoft tracking
+        'msclkid',
+        // Amazon tracking
+        'tag', 'ref', 'ref_',
+        // Email tracking
+        'mc_eid', 'mc_cid',
+        // General tracking
+        '_ga', '_gl', '_ke', 'yclid', 'zanpid', 'igshid',
+        // Other common ones
+        'si', 'feature', 'app', 'ved', 'usg', 'sa',
+        // Social media
+        's', 't', 'share', 'shared',
+        // Analytics
+        'source', 'medium', 'campaign',
+        // Referral tracking
+        'referrer', 'ref_src', 'ref_url'
+      ];
+
+      // Remove tracking parameters
+      trackingParams.forEach(param => {
+        url.searchParams.delete(param);
+      });
+
+      cleanedUrl = url.toString();
+    } catch (error) {
+      console.error('URL cleaning error:', error);
+      cleanedUrl = "Invalid URL format";
+    }
+  }
+
+  function copyCleanedUrl() {
+    if (cleanedUrl && cleanedUrl !== "Invalid URL format") {
+      navigator.clipboard.writeText(cleanedUrl).then(() => {
+        console.log('URL copied to clipboard');
+      }).catch(err => {
+        console.error('Failed to copy URL:', err);
+      });
+    }
+  }
+
+  async function lookupWhois(event: Event) {
+    event.preventDefault();
+    
+    if (!whoisDomain.trim()) {
+      whoisResult = "";
+      return;
+    }
+
+    isWhoisLoading = true;
+    whoisResult = "";
+
+    try {
+      const result = await invoke("whois_lookup", { domain: whoisDomain.trim() });
+      if (typeof result === 'string') {
+        whoisResult = result;
+      }
+    } catch (error) {
+      console.error('WHOIS lookup error:', error);
+      whoisResult = `Error: ${error}`;
+    } finally {
+      isWhoisLoading = false;
+    }
+  }
+
+  async function lookupGeolocation(event: Event) {
+    event.preventDefault();
+    
+    if (!geoIp.trim()) {
+      geoResult = null;
+      return;
+    }
+
+    isGeoLoading = true;
+    geoResult = null;
+
+    try {
+      const result = await invoke("geoip_lookup", { ip: geoIp.trim() });
+      if (result && typeof result === 'object') {
+        geoResult = result as {ip: string, country?: string, city?: string, region?: string, org?: string};
+      }
+    } catch (error) {
+      console.error('Geolocation lookup error:', error);
+      geoResult = { ip: geoIp.trim(), country: `Error: ${error}` };
+    } finally {
+      isGeoLoading = false;
+    }
+  }
 </script>
 
 <main class="container">
@@ -374,6 +495,146 @@
               </div>
             </div>
           {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="url-cleaner-section">
+    <h2>URL Cleaner</h2>
+    <p class="url-cleaner-description">Remove tracking parameters (UTM, Facebook, Google, etc.) from URLs</p>
+    
+    <form class="url-cleaner-form" onsubmit={cleanUrl}>
+      <div class="url-cleaner-input-row">
+        <input 
+          type="url" 
+          placeholder="Enter URL to clean (e.g., https://example.com?utm_source=google&fbclid=123)" 
+          bind:value={urlToClean} 
+          class="url-cleaner-input"
+          required
+        />
+        <button type="submit" class="url-cleaner-button">
+          Clean URL
+        </button>
+      </div>
+    </form>
+
+    {#if cleanedUrl}
+      <div class="url-cleaner-results">
+        <h3>Cleaned URL:</h3>
+        <div class="cleaned-url-container">
+          <div class="cleaned-url-display">
+            {#if cleanedUrl === "Invalid URL format"}
+              <span class="error-message">{cleanedUrl}</span>
+            {:else}
+              <span class="cleaned-url-text">{cleanedUrl}</span>
+            {/if}
+          </div>
+          {#if cleanedUrl !== "Invalid URL format"}
+            <button type="button" onclick={copyCleanedUrl} class="copy-url-button">
+              📋 Copy
+            </button>
+          {/if}
+        </div>
+        
+        {#if cleanedUrl !== "Invalid URL format" && cleanedUrl !== urlToClean.trim()}
+          <div class="url-comparison">
+            <div class="url-diff">
+              <strong>Parameters removed:</strong>
+              <span class="removed-params">URL was cleaned successfully</span>
+            </div>
+          </div>
+        {:else if cleanedUrl === urlToClean.trim()}
+          <div class="url-comparison">
+            <div class="no-changes">
+              <strong>No tracking parameters found</strong> - URL is already clean
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
+
+  <div class="whois-section">
+    <h2>WHOIS Lookup</h2>
+    <p class="whois-description">Get domain registration information and ownership details</p>
+    
+    <form class="whois-form" onsubmit={lookupWhois}>
+      <div class="whois-input-row">
+        <input 
+          type="text" 
+          placeholder="Enter domain (e.g., google.com)" 
+          bind:value={whoisDomain} 
+          class="whois-input"
+          required
+        />
+        <button type="submit" disabled={isWhoisLoading} class="whois-button">
+          {isWhoisLoading ? "Looking up..." : "WHOIS Lookup"}
+        </button>
+      </div>
+    </form>
+
+    {#if whoisResult}
+      <div class="whois-results">
+        <h3>WHOIS Information:</h3>
+        <div class="whois-display">
+          <pre class="whois-text">{whoisResult}</pre>
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="geo-section">
+    <h2>IP Geolocation</h2>
+    <p class="geo-description">Get geographical location information for an IP address</p>
+    
+    <form class="geo-form" onsubmit={lookupGeolocation}>
+      <div class="geo-input-row">
+        <input 
+          type="text" 
+          placeholder="Enter IP address (e.g., 8.8.8.8)" 
+          bind:value={geoIp} 
+          class="geo-input"
+          required
+        />
+        <button type="submit" disabled={isGeoLoading} class="geo-button">
+          {isGeoLoading ? "Looking up..." : "Geo Lookup"}
+        </button>
+      </div>
+    </form>
+
+    {#if geoResult}
+      <div class="geo-results">
+        <h3>Geolocation Information:</h3>
+        <div class="geo-info-cards">
+          <div class="geo-info-card">
+            <div class="geo-info-label">IP Address</div>
+            <div class="geo-info-value">{geoResult.ip}</div>
+          </div>
+          {#if geoResult.country}
+            <div class="geo-info-card">
+              <div class="geo-info-label">Country</div>
+              <div class="geo-info-value">{geoResult.country}</div>
+            </div>
+          {/if}
+          {#if geoResult.region}
+            <div class="geo-info-card">
+              <div class="geo-info-label">Region</div>
+              <div class="geo-info-value">{geoResult.region}</div>
+            </div>
+          {/if}
+          {#if geoResult.city}
+            <div class="geo-info-card">
+              <div class="geo-info-label">City</div>
+              <div class="geo-info-value">{geoResult.city}</div>
+            </div>
+          {/if}
+          {#if geoResult.org}
+            <div class="geo-info-card">
+              <div class="geo-info-label">Organization</div>
+              <div class="geo-info-value">{geoResult.org}</div>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -1052,6 +1313,391 @@ select::-webkit-scrollbar-thumb:hover {
   
   .dns-record-details {
     width: 100%;
+  }
+}
+
+/* URL Cleaner Section Styling */
+.url-cleaner-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.url-cleaner-section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.url-cleaner-description {
+  margin-bottom: 1.5rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-size: 0.9rem;
+}
+
+.url-cleaner-form {
+  margin-bottom: 2rem;
+}
+
+.url-cleaner-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.url-cleaner-input {
+  flex: 1;
+  min-width: 350px;
+  height: 3rem;
+  padding: 0 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.url-cleaner-button {
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #2196F3;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.url-cleaner-button:hover {
+  background-color: #1976D2;
+}
+
+.url-cleaner-results {
+  width: 100%;
+}
+
+.url-cleaner-results h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.cleaned-url-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cleaned-url-display {
+  flex: 1;
+  min-width: 300px;
+  padding: 1rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  word-break: break-all;
+}
+
+.cleaned-url-text {
+  font-family: monospace;
+  font-size: 0.9em;
+  color: var(--text-color);
+}
+
+.error-message {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.copy-url-button {
+  height: 3rem;
+  padding: 0 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #4CAF50;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.copy-url-button:hover {
+  background-color: #45a049;
+}
+
+.url-comparison {
+  padding: 0.75rem;
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.url-diff {
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.removed-params {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.no-changes {
+  color: #2196F3;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .url-cleaner-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .url-cleaner-input {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 0.5rem;
+  }
+  
+  .cleaned-url-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cleaned-url-display {
+    min-width: unset;
+  }
+}
+
+/* WHOIS Section Styling */
+.whois-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.whois-section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.whois-description {
+  margin-bottom: 1.5rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-size: 0.9rem;
+}
+
+.whois-form {
+  margin-bottom: 2rem;
+}
+
+.whois-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.whois-input {
+  flex: 1;
+  min-width: 250px;
+  height: 3rem;
+  padding: 0 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.whois-button {
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #9C27B0;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.whois-button:hover:not(:disabled) {
+  background-color: #7B1FA2;
+}
+
+.whois-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.whois-results {
+  width: 100%;
+}
+
+.whois-results h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.whois-display {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.whois-text {
+  margin: 0;
+  font-family: monospace;
+  font-size: 0.85em;
+  color: var(--text-color);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+/* Geolocation Section Styling */
+.geo-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.geo-section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.geo-description {
+  margin-bottom: 1.5rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-size: 0.9rem;
+}
+
+.geo-form {
+  margin-bottom: 2rem;
+}
+
+.geo-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.geo-input {
+  flex: 1;
+  min-width: 200px;
+  height: 3rem;
+  padding: 0 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.geo-button {
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #FF9800;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.geo-button:hover:not(:disabled) {
+  background-color: #F57C00;
+}
+
+.geo-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.geo-results {
+  width: 100%;
+}
+
+.geo-results h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.geo-info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.geo-info-card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.geo-info-label {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.geo-info-value {
+  font-size: 1.1rem;
+  color: var(--text-color);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .whois-input-row,
+  .geo-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .whois-input,
+  .geo-input {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 0.5rem;
+  }
+  
+  .geo-info-cards {
+    grid-template-columns: 1fr;
   }
 }
 
