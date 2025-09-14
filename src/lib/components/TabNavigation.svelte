@@ -50,7 +50,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: 0 1rem;
     border: none;
     background: transparent;
     color: var(--text-secondary, #666666);
@@ -61,6 +61,7 @@
     transition: all 0.25s ease;
     white-space: nowrap;
     position: relative;
+    height: 2.4rem;
   }
 
   .tab-button:hover {
@@ -99,7 +100,7 @@
     }
     
     .tab-button {
-      padding: 0.5rem 0.75rem;
+      padding: 0 0.75rem;
       font-size: 0.85rem;
     }
     

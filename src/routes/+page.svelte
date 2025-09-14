@@ -171,6 +171,14 @@
   :global(input, select, textarea, button) {
     font-family: inherit;
     transition: all 0.25s;
+    height: 2.4rem;
+    box-sizing: border-box;
+  }
+
+  /* Override height for textarea to allow flexible height */
+  :global(textarea) {
+    height: auto;
+    min-height: 2.4rem;
   }
 
   :global(select) {
@@ -271,7 +279,7 @@
   }
 
   .theme-select {
-    padding: 0.5rem 2rem 0.5rem 0.5rem;
+    padding: 0 2rem 0 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     background: var(--input-bg);
@@ -279,6 +287,7 @@
     font-size: 0.9rem;
     cursor: pointer;
     min-width: 120px;
+    height: 2.4rem;
     /* Remove default styling */
     -webkit-appearance: none;
     -moz-appearance: none;

@@ -358,16 +358,17 @@
 
   .tool-input {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     font-size: 1rem;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
+    height: 2.4rem;
   }
 
   .tool-button {
-    padding: 0.75rem 1.5rem;
+    padding: 0 1.5rem;
     background: var(--primary-color, #007acc);
     color: white;
     border: none;
@@ -376,6 +377,7 @@
     cursor: pointer;
     transition: background-color 0.25s;
     white-space: nowrap;
+    height: 2.4rem;
   }
 
   .tool-button:hover:not(:disabled) {
@@ -401,13 +403,16 @@
   }
 
   .quick-ip-button {
-    padding: 0.25rem 0.5rem;
+    padding: 0 0.5rem;
     background: var(--secondary-bg, #f5f5f5);
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 4px;
     font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.25s;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
   }
 
   .quick-ip-button:hover {
@@ -523,11 +528,12 @@
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 0.5rem 0.75rem;
+    padding: 0 0.75rem;
     cursor: pointer;
     font-size: 0.8rem;
     white-space: nowrap;
     transition: background-color 0.25s;
+    height: 2.4rem;
   }
 
   .copy-button:hover {

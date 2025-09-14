@@ -267,7 +267,7 @@
   }
 
   .method-select {
-    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    padding: 0 2.5rem 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     background: var(--input-bg, #ffffff);
@@ -275,6 +275,7 @@
     font-weight: 500;
     min-width: 100px;
     cursor: pointer;
+    height: 2.4rem;
     /* Custom styling */
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -307,16 +308,17 @@
 
   .url-input {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     font-size: 1rem;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
+    height: 2.4rem;
   }
 
   .send-button {
-    padding: 0.75rem 1.5rem;
+    padding: 0 1.5rem;
     background: var(--primary-color, #007acc);
     color: white;
     border: none;
@@ -324,6 +326,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.25s;
+    height: 2.4rem;
   }
 
   .send-button:hover:not(:disabled) {
@@ -348,13 +351,14 @@
 
   .user-agent-select {
     width: 100%;
-    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    padding: 0 2.5rem 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
     margin-bottom: 0.5rem;
     cursor: pointer;
+    height: 2.4rem;
     /* Custom styling */
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -387,12 +391,13 @@
 
   .custom-user-agent-input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
     margin-bottom: 0.5rem;
+    height: 2.4rem;
   }
 
   .user-agent-preview {
@@ -424,11 +429,12 @@
   .header-key-input,
   .header-value-input {
     flex: 1;
-    padding: 0.5rem;
+    padding: 0 0.5rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 6px;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
+    height: 2.4rem;
   }
 
   .remove-header-button {
@@ -436,10 +442,10 @@
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 0.5rem;
+    padding: 0;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
+    width: 2.4rem;
+    height: 2.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -450,9 +456,10 @@
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 0.5rem 1rem;
+    padding: 0 1rem;
     cursor: pointer;
     margin-top: 0.5rem;
+    height: 2.4rem;
   }
 
   .loading-indicator {

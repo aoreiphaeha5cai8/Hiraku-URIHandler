@@ -579,13 +579,14 @@
 
   .radio-url-input {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     font-size: 1rem;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
     min-width: 300px;
+    height: 2.4rem;
   }
 
   .play-button {
@@ -593,11 +594,12 @@
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0.75rem 1.25rem;
+    padding: 0 1.25rem;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.25s;
     white-space: nowrap;
+    height: 2.4rem;
   }
 
   .play-button:hover:not(:disabled) {
@@ -609,11 +611,12 @@
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0.75rem 1.25rem;
+    padding: 0 1.25rem;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.25s;
     white-space: nowrap;
+    height: 2.4rem;
   }
 
   .stop-button:hover:not(:disabled) {
@@ -636,11 +639,12 @@
     color: var(--text-color, #333333);
     border: none;
     border-radius: 8px;
-    padding: 0.75rem 1.25rem;
+    padding: 0 1.25rem;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.25s;
     white-space: nowrap;
+    height: 2.4rem;
   }
 
   .reset-button:hover {
