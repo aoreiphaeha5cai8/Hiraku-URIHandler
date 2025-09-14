@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css">[nexus-ui]{height:5000px;width:5000px}</style><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BREAKCORN | Broadcast Stream Client Web Application</title>
+<meta name="description" content="Breakcore / Digital Hardcore / IDM / Noise / Industrial">
+<!-- Yandex.Metrika counter -->
+<script async="" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/tag.js"></script><script type="text/javascript">
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();
+   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(98488070, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/98488070" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<script type="text/javascript">// if (location.protocol !== 'https:') { location.replace(`https:${location.href.substring(location.protocol.length)}`); }</script>
+
+<!-- <link href="//fonts.googleapis.com/css?family=Oswald" rel="stylesheet" type="text/css" /> -->
+<link href="./BREAKCORN _ Broadcast Stream Client Web Application_files/pixel-calculon" rel="stylesheet">
+<link href="./BREAKCORN _ Broadcast Stream Client Web Application_files/nonfiction" rel="stylesheet">
+
+<link rel="stylesheet" type="text/css" href="./BREAKCORN _ Broadcast Stream Client Web Application_files/reset.min.css">
+<link rel="stylesheet" type="text/css" href="./BREAKCORN _ Broadcast Stream Client Web Application_files/semantic.min.css">
+<link rel="stylesheet" type="text/css" href="./BREAKCORN _ Broadcast Stream Client Web Application_files/animate.min.css">
+<link rel="stylesheet" href="./BREAKCORN _ Broadcast Stream Client Web Application_files/styles.css">
+<style type="text/css">
+  
+</style>
+<!--
+  https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter
+-->
+<script src="./BREAKCORN _ Broadcast Stream Client Web Application_files/embed.js" data-timestamp="1757889691522"></script><script src="./BREAKCORN _ Broadcast Stream Client Web Application_files/alfie_v4.63f1ab6d6b9d5807dc0c94ef3fe0b851.js" async="" charset="UTF-8"></script></head><body>
+
+<audio crossorigin="anonymous" id="player" src="https://radio.mosco.win/play"><!-- autoplay="autoplay" https://qna.habr.com/q/1318536 -->
+  <!-- <source src="https://audio-edge-kef8b.ams.s.radiomast.io/0096c4fc-e4c2-4bdc-bce7-0419448040a8" type="audio/mpeg"> -->
+  <source src="https://stream.breakcorn.ru/main" type="audio/mpeg">
+  <source src="https://stream.breakcorn.ru/mezzo" type="audio/mpeg">
+  <source src="https://radio.mosco.win/play" type="audio/mpeg">
+  <source src="http://94.130.113.214:8000/chill" type="audio/mpeg">
+  <source src="http://94.130.113.214:8000/dubtechno" type="audio/mpeg">
+  <source src="http://94.130.113.214:8000/prog" type="audio/mpeg">
+  <source src="http://94.130.113.214:8000/schizoid" type="audio/mpeg">
+</audio>
+
+<div id="BG_FIXED" style="display: block; --animate-duration: 1s;" class="animate__animated animate__fadeIn">
+  <canvas id="CANVAS" class="invrtd" style="" width="1920" height="861"></canvas><div id="NOISE" style="display: none;"></div>
+  <div class="interface">
+    <div style="position: absolute; top: 48vh; left: 0; right: 0; margin: auto; max-height: 64px; color: #444; text-align: center; vertical-align: middle; font-size: 1.4rem;">
+      <span id="CURRENT_PLAYING_TITLE"></span>
+    </div>
+    <div class="logo-container">
+      <div class="glitch" data-text="BREAKCORN">BREAKCORN</div>
+      <div class="glow">BREAKCORN</div>
+      <p class="subtitle">GENERATIVE AUDIO STREAMS</p>
+    </div>
+    <div class="wrapper">
+      <div class="triangle-wrap">
+        <div class="triangle triangle--main"></div>
+        <div class="triangle triangle--1"></div>
+        <div class="triangle triangle--2"></div>
+        <div class="triangle triangle--3"></div>
+        <div class="triangle__text" data-text=""></div>
+      </div>
+    </div>
+    <div id="SCANLINES" class=""></div>
+  </div>
+</div>
+
+<!-- Following Menu -->
+<div class="ui large top fixed hidden menu">
+  <div class="ui container">
+    <!-- <a class="active item">Home</a> -->
+    <!-- <a class="item">Work</a> -->
+    <!-- <a class="item">Company</a> -->
+    <!-- <a class="item">Careers</a> -->
+    <a class="item" onclick="$(&#39;.ui.modal.settings&#39;).modal(&#39;show&#39;);">Settings</a>
+    <a class="item" href="https://www.breakcorn.ru/#disqus_thread">Comments</a>
+    <a class="item" href="https://breakcorn.ru/static/playlists/listen.m3u">M3U</a>
+    <a class="item" href="https://breakcorn.ru/static/playlists/listen.m3u8">M3U8</a>
+    <a class="item" href="https://breakcorn.ru/static/playlists/listen.pls">PLS</a>
+    <a id="BTN_FAQ_2" class="item" href="https://www.breakcorn.ru/#">FAQ</a>
+    <div class="right menu">
+      <div class="item">
+        <a class="ui button" onclick="$(&#39;.ui.modal.comingSoon&#39;).modal(&#39;show&#39;);">Log in</a>
+      </div>
+      <div class="item">
+        <a class="ui primary button" onclick="$(&#39;.ui.modal.comingSoon&#39;).modal(&#39;show&#39;);">Sign Up</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="PRELOADER" class="ui active dimmer invrtd" style="display: none;">
+  <div class="ui text loader">Loading...</div>
+  <noscript style="max-width: 512px; width: 100%;">
+    <iframe src="/noscript?theme=light" width="512" height="256" frameborder="no" sandbox="allow-top-navigation" seamless="seamless">Your browser does not support floating frames!</iframe>
+    <style>
+      body { overflow: hidden; }
+      #PRELOADER { width: 100vw; }
+      #PRELOADER.invrtd { background-color: #FEF; }
+      .loader { display: none !important; }
+    </style>
+  </noscript>
+</div>
+
+
+
+<main class="pusher" style="background: none;">
+  <header id="HEADER" class="ui inverted vertical masthead center aligned segment" style="background: none !important; background-color: none !important; width: 100vw; height: 100vh;">
+    <div class="ui container interface">
+      <div class="ui large secondary inverted pointing menu">
+        <!-- <a class="toc item"><i class="sidebar icon"></i></a> -->
+        <!-- <a class="active item">Home</a> -->
+        <!-- <a class="item">Work</a> -->
+        <!-- <a class="item">Company</a> -->
+        <!-- <a class="item">Careers</a> -->
+        <div class="item">
+          <a class="ui inverted button" onclick="$(&#39;.ui.modal.settings&#39;).modal(&#39;show&#39;);">Settings</a>
+        </div>
+        <div class="item">
+          <a class="ui inverted button" href="https://www.breakcorn.ru/#disqus_thread">Comments</a>
+        </div>
+        <div class="item">
+          <a class="ui inverted button" href="https://breakcorn.ru/static/playlists/listen.m3u">M3U</a>
+          <a class="ui inverted button" href="https://breakcorn.ru/static/playlists/listen.m3u8">M3U8</a>
+          <a class="ui inverted button" href="https://breakcorn.ru/static/playlists/listen.pls">PLS</a>
+        </div>
+        <div class="item">
+          <a id="BTN_FAQ_1" class="ui inverted button" href="https://www.breakcorn.ru/#">FAQ</a>
+        </div>
+        <div class="right item">
+          <a class="ui button" onclick="$(&#39;.ui.modal.comingSoon&#39;).modal(&#39;show&#39;);">Log in</a>
+          <a class="ui inverted button" onclick="$(&#39;.ui.modal.comingSoon&#39;).modal(&#39;show&#39;);">Sign Up</a>
+        </div>
+      </div>
+    </div>
+    <div class="ui text container interface">
+      <!-- <h1 class="ui inverted header">Imagine-a-Company</h1> -->
+      <!-- <h2>Do whatever you want when you want to.</h2> -->
+      <div class="audio-player" style="z-index: 100; display: block; --animate-duration: 1s;">
+        <div class="audio-player-back-ring-center"></div>
+        <div class="audio-player-controls">
+          <img src="./BREAKCORN _ Broadcast Stream Client Web Application_files/Play-Icon.svg" alt="Tastatur-Demo abspielen" class="audio-player-button">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  
+
+  
+
+  <section class="ui vertical stripe segment">
+    <div class="ui text container">
+      <h3 class="ui header" style="text-align: center;">Your wishes and suggestions...</h3>
+      <p style="text-align: center;"><img src="./BREAKCORN _ Broadcast Stream Client Web Application_files/lama-isolated-on-transparent-background-ai-generated-png.webp" width="256"></p>
+      <!-- <p>Instead of focusing on content creation and hard work, we have learned how to master the art of doing nothing by providing massive amounts of whitespace and generic content that can seem massive, monolithic and worth your attention.</p>
+      <a class="ui large button">Read More</a>
+      <h4 class="ui horizontal header divider">
+        <a href="#">Case Studies</a>
+      </h4>
+      <h3 class="ui header">Did We Tell You About Our Bananas?</h3>
+      <p>Yes I know you probably disregarded the earlier boasts as non-sequitur filler content, but its really true. It took years of gene splicing and combinatory DNA research, but our bananas can really dance.</p>
+      <a class="ui large button">I'm Still Quite Interested</a> -->
+      <div id="disqus_thread"><iframe id="dsq-app6970" name="dsq-app6970" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" width="100%" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/saved_resource.html" style="width: 1px !important; min-width: 100% !important; border: none !important; overflow: hidden !important; height: 633px !important;" horizontalscrolling="no" verticalscrolling="no"></iframe></div>
+      <script>
+        // See more at: https://disqus.com/admin/universalcode/#configuration-variables
+        var disqus_config = function () {
+          this.page.url = 'https://breakcorn.ru/'; // canonical URL variable
+          this.page.identifier = 0;                // page's unique identifier variable
+        };
+        (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        s.src = 'https://breakcorn.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', + new Date());
+        (d.head || d.body).appendChild(s);
+        })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+  </section>
+
+  
+</main>
+
+<div class="ui modal settings" id="M3387483">
+  <i class="close icon"></i>
+  <div class="header">
+    <h2>Settings</h2>
+  </div>
+  <div class="image content">
+    <div class="image"><img src="./BREAKCORN _ Broadcast Stream Client Web Application_files/icon_settings.png" width="192" style="opacity: 0.6;"></div>
+    <div class="description" style="width: 100%;">
+      <div>
+        <h3>Master Controls</h3>
+      </div>
+      <div class="ui divider"></div>
+      <div class="master-controls ui grid">
+        <div class="eight wide column" style="text-align: center;">
+          <label for="volume">VOL</label><br>
+          <input type="range" id="volume" class="control-volume" min="0" max="2" value="1" list="gain-vals" step="0.01" data-action="volume">
+          <datalist id="gain-vals">
+            <option value="0" label="min"></option>
+            <option value="2" label="max"></option>
+          </datalist>
+        </div>
+        <div class="eight wide column" style="text-align: center;">
+          <label for="panner">PAN</label><br>
+          <input type="range" id="panner" class="control-panner" list="pan-vals" min="-1" max="1" value="0" step="0.01" data-action="panner">
+          <datalist id="pan-vals">
+            <option value="-1" label="left"></option>
+            <option value="1" label="right"></option>
+          </datalist>
+          <button data-playing="false" class="controls-play" role="switch" aria-checked="false" style="display: none;"><span>P/P</span>
+          </button>
+        </div>
+      </div>
+      <div class="ui divider"></div>
+      <div>
+        <h3>Compressor</h3>
+      </div>
+      <div class="ui divider"></div>
+      <div class="master-controls ui grid">
+        <div class="eight wide column" style="text-align: center;">
+          <div style="display: grid; grid-template-columns: auto auto auto;">
+            <div class="grid-item">
+              <span id="dial_threshold" nexus-ui="" style="width: 75px; height: 75px;"><svg width="75" height="75" style="cursor: pointer;"><circle cx="37.5" cy="37.5" r="35.625" fill="#eee"></circle><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.5 37.5 L 37.5 0" stroke-width="3.75" stroke="#2bb"></path><circle cx="37.5" cy="37.5" r="6.25" fill="#2bb"></circle></svg></span>
+              <span id="number_threshold" nexus-ui="" style="width: 60px; height: 30px;"><input type="text" style="width: 60px; height: 30px; background-color: rgb(238, 238, 238); color: rgb(51, 51, 51); font-family: arial; font-weight: 500; font-size: 15px; border: none; outline: none; padding: 7.5px; box-sizing: border-box; cursor: pointer;"></span><br>
+              <label>threshold</label>
+            </div>
+            <div class="grid-item">
+              <span id="dial_knee" nexus-ui="" style="width: 75px; height: 75px;"><svg width="75" height="75" style="cursor: pointer;"><circle cx="37.5" cy="37.5" r="35.625" fill="#eee"></circle><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.49999999999999 73.125 A 35.625 35.625 0 0 0 37.500000000000014 1.875" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.49999999999999 73.125 A 35.625 35.625 0 0 0 37.500000000000014 1.875 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.5 37.5 L 37.49999999999999 75" stroke-width="3.75" stroke="#2bb"></path><circle cx="37.5" cy="37.5" r="6.25" fill="#2bb"></circle></svg></span>
+              <span id="number_knee" nexus-ui="" style="width: 60px; height: 30px;"><input type="text" style="width: 60px; height: 30px; background-color: rgb(238, 238, 238); color: rgb(51, 51, 51); font-family: arial; font-weight: 500; font-size: 15px; border: none; outline: none; padding: 7.5px; box-sizing: border-box; cursor: pointer;"></span><br>
+              <label>knee</label>
+            </div>
+            <div class="grid-item">
+              <span id="dial_ratio" nexus-ui="" style="width: 75px; height: 75px;"><svg width="75" height="75" style="cursor: pointer;"><circle cx="37.5" cy="37.5" r="35.625" fill="#eee"></circle><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 54.455625876945774 6.168747613268838 A 35.625 35.625 0 0 0 37.500000000000014 1.875" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.5 1.875 A 35.625 35.625 0 0 0 37.49999999999999 73.125 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 54.455625876945774 6.168747613268838 A 35.625 35.625 0 0 0 37.500000000000014 1.875 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.5 37.5 L 55.34802723889028 4.519734329756673" stroke-width="3.75" stroke="#2bb"></path><circle cx="37.5" cy="37.5" r="6.25" fill="#2bb"></circle></svg></span>
+              <span id="number_ratio" nexus-ui="" style="width: 60px; height: 30px;"><input type="text" style="width: 60px; height: 30px; background-color: rgb(238, 238, 238); color: rgb(51, 51, 51); font-family: arial; font-weight: 500; font-size: 15px; border: none; outline: none; padding: 7.5px; box-sizing: border-box; cursor: pointer;"></span><br>
+              <label>ratio</label>
+            </div>
+            <div class="grid-item">
+              <span id="dial_attack" nexus-ui="" style="width: 75px; height: 75px;"><svg width="75" height="75" style="cursor: pointer;"><circle cx="37.5" cy="37.5" r="35.625" fill="#eee"></circle><path d="M 37.49999999999999 73.125 A 35.625 35.625 0 0 0 37.49999999999999 73.125" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.49999999999999 73.125 A 35.625 35.625 0 0 0 37.49999999999999 73.125 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.5 37.5 L 37.49999999999999 75" stroke-width="3.75" stroke="#2bb"></path><circle cx="37.5" cy="37.5" r="6.25" fill="#2bb"></circle></svg></span>
+              <span id="number_attack" nexus-ui="" style="width: 60px; height: 30px;"><input type="text" style="width: 60px; height: 30px; background-color: rgb(238, 238, 238); color: rgb(51, 51, 51); font-family: arial; font-weight: 500; font-size: 15px; border: none; outline: none; padding: 7.5px; box-sizing: border-box; cursor: pointer;"></span><br>
+              <label>attack</label>
+            </div>
+            <div class="grid-item">
+              <span id="dial_release" nexus-ui="" style="width: 75px; height: 75px;"><svg width="75" height="75" style="cursor: pointer;"><circle cx="37.5" cy="37.5" r="35.625" fill="#eee"></circle><path d="M 1.8753963468026882 37.66804628112678 A 35.625 35.625 0 0 0 37.49999999999999 73.125" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875" stroke-width="3.75" fill="none" stroke="#2bb"></path><path d="M 1.8753963468026882 37.66804628112678 A 35.625 35.625 0 0 0 37.49999999999999 73.125 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.500000000000014 1.875 A 35.625 35.625 0 0 0 37.500000000000014 1.875 L 37.5 37.5" fill-opacity="0.3" fill="#2bb"></path><path d="M 37.5 37.5 L 0.00041720716072291 37.67689082223871" stroke-width="3.75" stroke="#2bb"></path><circle cx="37.5" cy="37.5" r="6.25" fill="#2bb"></circle></svg></span>
+              <span id="number_release" nexus-ui="" style="width: 60px; height: 30px;"><input type="text" style="width: 60px; height: 30px; background-color: rgb(238, 238, 238); color: rgb(51, 51, 51); font-family: arial; font-weight: 500; font-size: 15px; border: none; outline: none; padding: 7.5px; box-sizing: border-box; cursor: pointer;"></span><br>
+              <label>release</label>
+            </div>
+            <div class="grid-item"></div>
+          </div>
+        </div>
+        <div class="eight wide column" style="text-align: center;">
+          <p>Presets:</p>
+          <button class="ui secondary button dynamicsCompressorPresetButton" id="button_setPreset_dynamicsCompressor_None">None</button>
+          <button class="ui secondary button dynamicsCompressorPresetButton" id="button_setPreset_dynamicsCompressor_Low">Low</button>
+          <button class="ui secondary button dynamicsCompressorPresetButton" id="button_setPreset_dynamicsCompressor_Medium">Medium</button>
+          <button class="ui secondary button dynamicsCompressorPresetButton" id="button_setPreset_dynamicsCompressor_High">High</button>
+          <style type="text/css">
+            #M3387483 .dynamicsCompressorPresetButton {
+              padding: .5em 1em;
+              background-color: cyan; color: #000;
+            }
+            #M3387483 .dynamicsCompressorPresetButton.active {
+              background-color: #000; color: #FFF;
+            }
+          </style>
+          <script type="text/javascript">
+            document.querySelectorAll('#M3387483 .dynamicsCompressorPresetButton').forEach(button => {
+              button.addEventListener('click', function() {
+                // Удаляем класс 'active' у всех кнопок
+                document.querySelectorAll('#M3387483 .dynamicsCompressorPresetButton').forEach(btn => btn.classList.remove('active'));
+                // Добавляем класс 'active' к нажатой кнопке
+                this.classList.add('active');
+              });
+            });
+          </script>
+        </div>
+      </div>
+      <div class="ui divider"></div>
+      <div style="display: none;">
+        <button class="ui secondary button" id="localFileBut">Load local file</button>
+        <button class="ui secondary button" id="micSelect">Use Microphone</button>
+      </div>
+      <!-- <div class="ui divider"></div> -->
+      <div>
+        <h3>Butterchurn</h3>
+        <p><a href="https://www.breakcorn.ru/#" onclick="openLinkInOtherWindow(&#39;https://github.com/jberg/butterchurn&#39;)">Butterchurn</a> is a WebGL implementation of the <a href="https://www.breakcorn.ru/#" onclick="openLinkInOtherWindow(&#39;https://www.geisswerks.com/milkdrop/&#39;)">Milkdrop Visualizer</a>.Is licensed under the MIT License — see the  <a href="https://www.breakcorn.ru/#" onclick="">LICENSE</a> file for details.</p>
+      </div>
+      <div class="ui divider"></div>
+      <div id="presetControls" class="ui grid">
+        <div class="six wide column">
+          <p>Preset:       </p>
+          <p>Random:       </p>
+          <p>Cycle:        </p>
+          <p>Cycle length: </p>
+        </div>
+        <div class="ten wide column" style="text-align: right;">
+          <p><select id="presetSelect" class="ui dropdown"><option value="0">$$$ Royal - Mashup (177)</option><option value="1">$$$ Royal - Mashup (197)</option><option value="2">$$$ Royal - Mashup (220)</option><option value="3">$$$ Royal - Mashup (273)</option><option value="4">$$$ Royal - Mashup (307)</option><option value="5">$$$ Royal - Mashup (326)</option><option value="6">$$$ Royal - Mashup (431)</option><option value="7">$$$ Royal - Mashup (441)</option><option value="8">_Aderrasi - Wanderer in Curved Space - mash0000 - faclempt k...</option><option value="9">_Eo.S. - glowsticks v2 02 - Geiss HPF</option><option value="10">_Flexi, martin + geiss - painterly rogue wave strike (color ...</option><option value="11">_Geiss - Artifact 01</option><option value="12">_Geiss - Artifact 03</option><option value="13">_Geiss - Desert Rose 2</option><option value="14">_Geiss - untitled</option><option value="15">_geiss_experimental__wavefronts</option><option value="16">_Krash + Eo.S. - Photographic Sentinel</option><option value="17">_Mig_004_version2</option><option value="18">_Mig_028</option><option value="19">_Mig_049</option><option value="20">_Mig_079</option><option value="21">_Mig_085</option><option value="22">_Mig_COLORFUL9</option><option value="23">_Mig_Oscilloscope008</option><option value="24">_Rovastar + Geiss - Hurricane Nightmare (Posterize Mix)</option><option value="25">AdamFX Mashup 2 Martin - reflections on black tile + Raron N...</option><option value="26">Aderrasi + Geiss - Airhandler (Kali Mix) - Canvas Mix</option><option value="27">Aderrasi + Geiss - Airhandler (Kali Mix) - Painterly Tendril...</option><option value="28">Aderrasi - Airhandler (Last Breath - Calm)</option><option value="29">Aderrasi - Mother Of Pearl - mash0000 - how to piss off your...</option><option value="30">Aderrasi - Potion of Spirits</option><option value="31">Aderrasi - Songflower (Moss Posy)</option><option value="32">Aderrasi - Storm of the Eye (Thunder) - mash0000 - quasi pse...</option><option value="33">Aderrasi - Veil of Steel (Steel Storm) - mash0000 - bob ross...</option><option value="34">An AdamFX n Martin Infusion 2 flexi - Why The Sky Looks Diff...</option><option value="35">bdrv - ultramix2 #43</option><option value="36">beta106i - Burning Form (Seething Mass) - mash0000 - fire pa...</option><option value="37">cope + geiss + stahlregen - cartune (bending gelatine mix)</option><option value="38">cope + martin - mother-of-pearl</option><option value="39">Cope - Passage (mandala mix)</option><option value="40">cope - strange attractor [flexis let it grow mix] (Jelly 5.5...</option><option value="41">cope - the drain to heaven</option><option value="42">Cope - The Neverending Explosion of Red Liquid Fire</option><option value="43">cope, martin + flexi - the slickery of alternative varnish</option><option value="44">DemonLD_-_Toxic_water_diffusion threx angela vs debi brown (...</option><option value="45">Eo.S. + flexi - glowsticks v2 05 and proton lights (+Krash′s...</option><option value="46">Eo.S. + Phat - cubetrace - v2</option><option value="47">Eo.S. + Zylot - skylight (Stained Glass Majesty mix)</option><option value="48">Eo.S. - glowsticks v2 03 music</option><option value="49">Eo.S. - glowsticks v2 05 and proton lights (+Krash′s beat co...</option><option value="50">EVET + Flexi - Rainbox Splash Poolz</option><option value="51">EVET - RGB Singularity</option><option value="52">fishbrain + flexi - stitchcraft</option><option value="53">fiShbRaiN + Flexi - witchcraft 2.0</option><option value="54">fiShbRaiN + geiss - witchcraft (Grow Mix 3)</option><option value="55">fiShbRaiN - toffee cream and icing sugar</option><option value="56">flexi + amandio c - organic</option><option value="57">flexi + amandio c - organic [random mashup]</option><option value="58">flexi + amandio c - organic12-3d-2.milk</option><option value="59">Flexi + amandio c - piercing 05 - Kopie (2) - Kopie</option><option value="60">flexi + bdrv - acid etching (jelly v5.5)</option><option value="61">flexi + fishbrain - neon mindblob grafitti</option><option value="62">Flexi + fiShbRaiN - operation fatcap II</option><option value="63">flexi + fishbrain - witchcraft [complex terraforming - fiddl...</option><option value="64">flexi + geiss - pogo cubes vs. tokamak vs. game of life [sta...</option><option value="65">Flexi + Geiss - pogo-cubes on tokamak matter (Jelly 5.55)</option><option value="66">Flexi + Geiss - Tokamak mindblob 2.0</option><option value="67">Flexi + Martin - astral projection</option><option value="68">Flexi + Martin - cascading decay swing</option><option value="69">Flexi + stahlregen - jelly showoff parade</option><option value="70">flexi - alien canvas [learning]</option><option value="71">Flexi - alien fader</option><option value="72">Flexi - alien fish pond</option><option value="73">Flexi - alien web bouncer [26]</option><option value="74">Flexi - area 51</option><option value="75">flexi - bouncing balls [double mindblob gastrointestinal mix...</option><option value="76">flexi - bouncing balls [double mindblob neon mix]</option><option value="77">Flexi - crush ice 72</option><option value="78">Flexi - dimensions, projection and abstraction</option><option value="79">flexi - hyperspaceflight (bn cn Jelly 4)</option><option value="80">Flexi - infused with the spiral</option><option value="81">flexi - infused with the spiral (jelly 4.x cn)</option><option value="82">flexi - inter state</option><option value="83">flexi - jelly fish mandala</option><option value="84">flexi - Mindblob</option><option value="85">Flexi - mindblob [shiny mix]</option><option value="86">Flexi - mindblob mix</option><option value="87">flexi - mom, why the sky looks different today</option><option value="88">flexi - patternton, district of media, capitol of the united...</option><option value="89">Flexi - piercing</option><option value="90">Flexi - predator-prey-spirals</option><option value="91">Flexi - predator-prey-spirals [stahlregens gelatine finish]</option><option value="92">Flexi - psychenapping</option><option value="93">Flexi - smashing fractals 2.0</option><option value="94">Flexi - smashing fractals [acid etching mix]</option><option value="95">flexi - splatter effects 17 the wave, a google love story wr...</option><option value="96">flexi - swing out on the spiral</option><option value="97">Flexi - truly soft piece of software - this is generic textu...</option><option value="98">flexi - what is the matrix</option><option value="99">Flexi, fishbrain + Martin - witchery</option><option value="100">Flexi, fishbrain, Geiss + Martin - tokamak witchery</option><option value="101">Flexi, Geiss and Rovastar - chaos layered tokamak</option><option value="102">Flexi, martin + geiss - dedicated to the sherwin maxawow</option><option value="103">Flexi, martin + geiss - painterly rogue wave strike</option><option value="104">flexi, stahlregen, geiss + tobias wolfboi - space gelatine b...</option><option value="105">Fumbling_Foo &amp; Flexi, Martin, Orb, Unchained - Star Nova v7b</option><option value="106">Geiss + Flexi + Martin - disconnected</option><option value="107">Geiss - 3 layers (Tunnel Mix)</option><option value="108">Geiss - Bipolar 2 Enhanced</option><option value="109">Geiss - Brain Zoom 4</option><option value="110">Geiss - Cauldron - painterly (saturation remix)</option><option value="111">Geiss - Cauldron - painterly 2 (saturation remix)</option><option value="112">Geiss - Color Pox (Acid Impression Mix) (color saturation re...</option><option value="113">Geiss - Desert Rose 4</option><option value="114">Geiss - Game of Life 3</option><option value="115">Geiss - Myriad Mosaics</option><option value="116">Geiss - Planet 1</option><option value="117">Geiss - Reaction Diffusion 2</option><option value="118">Geiss - Reaction Diffusion 3</option><option value="119">Geiss - Reaction Diffusion 3 (Lichen Mix)</option><option value="120">Geiss - Skin Dots Multi-layer 3</option><option value="121">Geiss - Spiral Artifact</option><option value="122">Geiss - Thumb Drum</option><option value="123">Geiss - Tokamak Plus 2</option><option value="124">Geiss - Two-Pointed Pulsagon - mash0000 - bubonic super-flui...</option><option value="125">Geiss, Flexi + Stahlregen - Thumbdrum Tokamak [crossfiring a...</option><option value="126">goody + martin - crystal palace - schizotoxin - the wild iri...</option><option value="127">Goody - Ego Decontructor</option><option value="128">Goody - The Wild Vort</option><option value="129">GreatWho - Lasershow</option><option value="130">high-altitude basket unraveling - singh grooves nitrogen arg...</option><option value="131">Idiot - Star Of Annon</option><option value="132">Illusion &amp; Rovastar - Dotty Mad Space (Jelly)</option><option value="133">Krash + Illusion - Spiral Movement</option><option value="134">martin + flexi - diamond cutter [prismaticvortex.com] - cami...</option><option value="135">martin + stahlregen - martin in da mash 12</option><option value="136">martin + stahlregen - martin in da mash 12a</option><option value="137">martin + stahlregen - martin in da mash 14</option><option value="138">martin + stahlregen - martin in da mash 3</option><option value="139">Martin - acid wiring</option><option value="140">martin - angel flight</option><option value="141">martin - another kind of groove</option><option value="142">martin - baby one more time</option><option value="143">martin - bombyx mori</option><option value="144">martin - bombyx mori [flexi′s logarithmic edit]</option><option value="145">Martin - bombyx mori mix2</option><option value="146">martin - bring up the big guns</option><option value="147">martin - castle in the air</option><option value="148">martin - chain breaker</option><option value="149">Martin - charisma</option><option value="150">martin - cherry brain wall mod</option><option value="151">martin - city of shadows</option><option value="152">martin - cope - laser dome</option><option value="153">martin - crystal palace</option><option value="154">Martin - Diabolo</option><option value="155">Martin - disco mix 3 -fast</option><option value="156">martin - disco mix 4</option><option value="157">Martin - disco mix 6</option><option value="158">martin - elusive impressions mix2 - flacc mess proph nz+2</option><option value="159">martin - extreme heat</option><option value="160">martin - Flexis swarm in Martins pond [not yet a boid implem...</option><option value="161">martin - frosty caves 2</option><option value="162">martin - fruit machine</option><option value="163">martin - gate to moria</option><option value="164">martin - ghost city</option><option value="165">martin - glass corridor</option><option value="166">martin - glassball dance</option><option value="167">martin - ice flames</option><option value="168">martin - infinity (2010 update)</option><option value="169">martin - into the fireworks</option><option value="170">Martin - journey into space</option><option value="171">Martin - liquid arrows</option><option value="172">martin - ludicrous speed</option><option value="173">martin - mandelbox explorer - high speed demo version</option><option value="174">martin - move this body</option><option value="175">martin - mucus cervix</option><option value="176">Martin - QBikal - Surface Turbulence IIb</option><option value="177">martin - reflections on black tiles</option><option value="178">martin - resonant twister - steel spring</option><option value="179">martin - satellite view</option><option value="180">martin - stormy sea (2010 update)</option><option value="181">martin - The Bridge of Khazad-Dum</option><option value="182">martin - tunnel race</option><option value="183">martin - witchcraft reloaded</option><option value="184">martin [shadow harlequins shape code] - fata morgana</option><option value="185">martin, fishbrain + flexi - mandelbox explorer v1 Eo.S. opti...</option><option value="186">martin, flexi, fishbrain + sto - enterstate [random mashup]</option><option value="187">Milk Artist At our Best - FED - SlowFast Ft AdamFX n Martin ...</option><option value="188">ORB - Magma Pool</option><option value="189">ORB - Pastel Primer</option><option value="190">orb - toxic goo</option><option value="191">ORB - Waaa</option><option value="192">Phat+fiShbRaiN+Eo.S_Mandala_Chasers_remix</option><option value="193">PieturP - triptrap_(ultimate-trip-mix)</option><option value="194">raron - a grayish blob - mash0000 - pungent gastric automata...</option><option value="195">rce-ordinary + flexi - far away distance (custom beat detect...</option><option value="196">Redi Jedi - i dont think those were portabello mushrooms</option><option value="197">Rocke - Answer.42 (New Mix 1) - mash0000 - slash and char p....</option><option value="198">Rovastar + Che - Asylum Animations</option><option value="199">Rovastar + Flexi - Hurricane Nightmare (Moebius Mix)</option><option value="200">Rovastar + Geiss - Hurricane Nightmare</option><option value="201">Rovastar + Geiss - Hurricane Nightmare (Relief Mix)</option><option value="202">Rovastar + Geiss - Hyperkaleidoscope Glow 2 motion blur (Jel...</option><option value="203">Rovastar + Geiss - Snapshot Of Space (LSB mix)</option><option value="204">Rovastar + Loadus + Geiss - FractalDrop (Triple Mix)</option><option value="205">Rovastar + Loadus + Geiss - Tone-mapped FractalDrop 7c</option><option value="206">Rovastar + Telek - Altars of Madness (Rolling Oceans Mix)</option><option value="207">Rovastar - A Million Miles From Earth (Wormhole Mix)</option><option value="208">Rovastar - Explosive Minds</option><option value="209">Rovastar - Oozing Resistance</option><option value="210">Rovastar - Trippy Sperm (Jelly)</option><option value="211">Rovastar-altarsofmadness(forgottenrea</option><option value="212">sawtooth grin roam</option><option value="213">shifter - dark tides bdrv mix</option><option value="214">shifter - dark tides bdrv mix 2</option><option value="215">shifter - escape the worm - Eo.S. + Phat - Before_It_Eats_Yo...</option><option value="216">shifter - feathers (angel wings)_phat_remix relief 2</option><option value="217">Stahlregen &amp; Boz + Eo.S + Geiss + Phat + Rovastar + Zylot - ...</option><option value="218">stahlregen &amp; geiss + rovastar - fields of flowers (mashup 9 ...</option><option value="219">stahlregen + geiss + shifter - babylon</option><option value="220">Stahlregen + martin + others - Psychedelic Metal Flower</option><option value="221">suksma - feign shoulder concern when i should be executed - ...</option><option value="222">suksma - gaeomaentaec - log smell 2 - steaming wienies2</option><option value="223">suksma - heretical crosscut playpen</option><option value="224">suksma - nip tuck</option><option value="225">suksma - Rovastar - Sunflower Passion (Enlightment Mix)_Phat...</option><option value="226">suksma - uninitialized variabowl (hydroponic chronic)</option><option value="227">suksma - vector exp 1 - couldn′t not</option><option value="228">suksma - water cooled red uranium vs dotes - freeenergynow.n...</option><option value="229">TonyMilkdrop - Leonardo Da Vinci's Balloon [Flexi - merry-go...</option><option value="230">TonyMilkdrop - Magellan's Nebula [Flexi - fancy + $this shal...</option><option value="231">TonyMilkdrop - Magellan's Nebula [Flexi - you enter first + ...</option><option value="232">Unchained &amp; Rovastar - Wormhole Pillars (Hall of Shadows mix...</option><option value="233">Unchained - Making a Science of It 4</option><option value="234">Unchained - Rewop</option><option value="235">Unchained - Unified Drag 2</option><option value="236">yin - 190 - Temporal fluctuations</option><option value="237">yin - 191 - Temporal singularities</option><option value="238">yin - 250 - Artificial poles of the continuum_Phat′s_Orbit_m...</option><option value="239">yin - 253 - Artificial poles of the continuum (remix #3)</option><option value="240">yin - 315 - Ocean of Light (yo im peakin yo Eo.S.-Phat)</option><option value="241">Zylot - In death there is life (Geiss Layered Mix)</option><option value="242">Zylot - Paint Spill (Music Reactive Paint Mix)</option><option value="243">Zylot - Star Ornament</option><option value="244">Zylot - True Visionary (Final Mix)</option></select></p>
+          <p><input type="checkbox" id="presetRandom" checked="checked"></p>
+          <p><input type="checkbox" id="presetCycle" checked="checked"></p>
+          <p><input type="number" id="presetCycleLength" step="1" value="17" min="1"></p>
+        </div>
+      </div>
+      <div class="ui divider"></div>
+      <div>
+        <h3>Source Server</h3>
+        <select class="ui dropdown" id="SOURCE_SERVER_SELECT" style="width: 100%;">
+          <option value="0" selected="selected">Breakcorn Radio - Main Stream</option>
+          <option value="1">Breakcorn Radio - Mezzo</option>
+          <option value="2">Breakcore Mashcore Radio.Mosco.win</option>
+          <option value="3">Nautic Radio Groningen</option>
+          <option value="4">Radio Schizoid - PsyTrance</option>
+          <option value="5">Radio Schizoid - Chillout / Ambient</option>
+          <option value="5">Radio Schizoid - Dub Techno</option>
+          <option value="5">Radio Schizoid - Progressive Psy</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="actions" style="text-align: center;">
+    <button class="ui button" onclick="$(&#39;.ui.modal&#39;).modal(&#39;hide&#39;);">OK</button>
+  </div>
+  <style type="text/css">
+    #M3387483 section { width: 100vw; }
+  </style>
+</div>
+
+<div class="ui modal comingSoon">
+  <div class="header">Information</div>
+  <div class="content">
+    <p>Coming soon...</p>
+  </div>
+  <div class="actions">
+    <div class="ui approve button">OK</div>
+  </div>
+</div>
+
+<div id="BTN_HIDE_INTERFACE" class="icon animate__animated animate__fadeIn animate__fadeOut" style="cursor: pointer; background-color: transparent; position: absolute; bottom: 3vh; left: 0px; right: 0px; margin: auto; max-width: 96px; max-height: 64px; color: rgb(255, 255, 255); text-align: center; font-size: 2rem; vertical-align: middle; display: block; --animate-duration: 1s;">
+  <i id="ICON_BTN_HIDE_INTERFACE" class="eye icon"></i>
+</div>
+<style type="text/css">
+  /* #BTN_HIDE_INTERFACE:hover { color: #000 !important; } */
+  /* #BTN_HIDE_INTERFACE:hover { background-color: #FFF !important; } */
+</style>
+
+<!-- <script src="//code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script> -->
+<script src="./BREAKCORN _ Broadcast Stream Client Web Application_files/jquery-3.1.1.min.js"></script>
+<script src="./BREAKCORN _ Broadcast Stream Client Web Application_files/semantic.min.js"></script><!-- <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js" crossorigin="anonymous"></script> -->
+<!-- <script src="../dist/components/form.js"></script> -->
+<!-- <script src="../dist/components/transition.js"></script> -->
+<!-- <script src="../dist/components/dropdown.js"></script> -->
+<!-- <script src="../dist/components/visibility.js"></script> -->
+<!-- <script src="../dist/components/sidebar.js"></script> -->
+<!-- <script src="../dist/components/transition.js"></script> -->
+
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/lodash.js"></script><!-- <script type="text/javascript" src="/static/vendor///unpkg.com/lodash" crossorigin="anonymous"></script> -->
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/butterchurn.js"></script><!-- <script type="text/javascript" src="butterchurn.js" crossorigin="anonymous"></script> -->
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/butterchurnPresets.min.js"></script><!-- <script type="text/javascript" src="//unpkg.com/butterchurn-presets" crossorigin="anonymous"></script> -->
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/butterchurnPresetsExtra.min.js"></script><!-- <script type="text/javascript" src="//unpkg.com/butterchurn-presets/lib/butterchurnPresetsExtra.min.js" crossorigin="anonymous"></script> -->
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/NexusUI.js"></script><!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/nexusui@latest/dist/NexusUI.js" crossorigin="anonymous"></script> -->
+<!-- <script type="text/javascript" src="//rawgit.com/taylorbf/Musicians-Toolkit/master/dist/NexusUI.js" crossorigin="anonymous"></script> -->
+<!-- <script id="dsq-count-scr" type="text/javascript" src="//breakcorn.disqus.com/count.js"></script> -->
+
+<script type="text/javascript" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/main.js"></script>
+
+<iframe style="display: none;" src="./BREAKCORN _ Broadcast Stream Client Web Application_files/saved_resource(1).html"></iframe></body></html>

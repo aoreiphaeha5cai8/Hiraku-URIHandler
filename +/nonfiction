@@ -1,0 +1,8 @@
+@font-face {
+    font-family: 'Nonfiction';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Nonfiction'), url('https://fonts.cdnfonts.com/s/29237/NONFICTION.woff') format('woff');
+}
+
+

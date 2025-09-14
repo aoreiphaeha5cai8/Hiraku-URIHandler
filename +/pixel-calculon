@@ -1,0 +1,14 @@
+@font-face {
+    font-family: 'Pixel Calculon';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Pixel Calculon'), url('https://fonts.cdnfonts.com/s/71822/Pixel Calculon.woff') format('woff');
+}
+@font-face {
+    font-family: 'Pixel Calculon';
+    font-style: italic;
+    font-weight: 400;
+    src: local('Pixel Calculon'), url('https://fonts.cdnfonts.com/s/71822/Pixel Calculon Italic.woff') format('woff');
+}
+
+
