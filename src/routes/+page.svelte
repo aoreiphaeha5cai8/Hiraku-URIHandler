@@ -12,6 +12,9 @@
   let customHeaders = $state<Array<{key: string, value: string}>>([{key: "", value: ""}]);
   let theme = $state<"light" | "dark" | "system">("system");
   let showHeaders = $state(false);
+  let dnsHostname = $state("");
+  let dnsResult = $state<Array<{hostname: string, ip_addresses: string[], record_type: string, ttl?: number}>>([]);
+  let isDnsLoading = $state(false);
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
   
@@ -186,6 +189,29 @@
     if (status >= 500) return "server-error";
     return "info";
   }
+
+  async function resolveDns(event: Event) {
+    event.preventDefault();
+    
+    if (!dnsHostname.trim()) {
+      return;
+    }
+
+    isDnsLoading = true;
+    dnsResult = [];
+
+    try {
+      const result = await invoke("resolve_dns", { hostname: dnsHostname.trim() });
+      if (Array.isArray(result)) {
+        dnsResult = result;
+      }
+    } catch (error) {
+      console.error('DNS resolution error:', error);
+      dnsResult = [];
+    } finally {
+      isDnsLoading = false;
+    }
+  }
 </script>
 
 <main class="container">
@@ -310,6 +336,48 @@
       <pre class="response-body">{response}</pre>
     </div>
   {/if}
+
+  <div class="dns-section">
+    <h2>DNS Resolution</h2>
+    <form class="dns-form" onsubmit={resolveDns}>
+      <div class="dns-input-row">
+        <input 
+          type="text" 
+          placeholder="Enter hostname (e.g., google.com)" 
+          bind:value={dnsHostname} 
+          class="dns-input"
+          required
+        />
+        <button type="submit" disabled={isDnsLoading} class="dns-button">
+          {isDnsLoading ? "Resolving..." : "Resolve DNS"}
+        </button>
+      </div>
+    </form>
+
+    {#if dnsResult.length > 0}
+      <div class="dns-results">
+        <h3>DNS Records:</h3>
+        <div class="dns-records">
+          {#each dnsResult as record}
+            <div class="dns-record">
+              <div class="dns-record-type">{record.record_type}</div>
+              <div class="dns-record-details">
+                <div class="dns-hostname">{record.hostname}</div>
+                <div class="dns-ips">
+                  {#each record.ip_addresses as ip}
+                    <span class="dns-ip">{ip}</span>
+                  {/each}
+                </div>
+                {#if record.ttl}
+                  <div class="dns-ttl">TTL: {record.ttl}s</div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
 </main>
 
 <style>
@@ -878,6 +946,160 @@ select::-webkit-scrollbar-thumb {
 
 select::-webkit-scrollbar-thumb:hover {
   background: var(--text-color);
+}
+
+/* DNS Section Styling */
+.dns-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.dns-section h2 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.dns-form {
+  margin-bottom: 2rem;
+}
+
+.dns-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dns-input {
+  flex: 1;
+  min-width: 300px;
+  height: 3rem;
+  padding: 0 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.dns-button {
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--button-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.3s, color 0.3s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.dns-button:hover {
+  border-color: #396cd8;
+}
+
+.dns-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dns-results {
+  width: 100%;
+}
+
+.dns-results h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.dns-records {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dns-record {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.dns-record-type {
+  background-color: #4CAF50;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+.dns-record-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dns-hostname {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+
+.dns-ips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dns-ip {
+  background-color: color-mix(in srgb, var(--bg-color) 90%, var(--text-color) 10%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  border: 1px solid var(--border-color);
+}
+
+.dns-ttl {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .dns-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .dns-input {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .dns-record {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .dns-record-details {
+    width: 100%;
+  }
 }
 
 </style>
