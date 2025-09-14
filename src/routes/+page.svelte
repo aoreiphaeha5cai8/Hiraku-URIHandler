@@ -493,6 +493,8 @@
   margin: 0;
   line-height: 1.4;
   tab-size: 2;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 :root {
