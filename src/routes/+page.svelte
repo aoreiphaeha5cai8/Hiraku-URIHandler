@@ -29,6 +29,7 @@
   let currentStation = $state("");
   let streamInfo = $state<{title?: string, bitrate?: string, format?: string}>({});
   let audioElement: HTMLAudioElement | null = null;
+  let activeResponseTab = $state<'raw' | 'preview'>('raw');
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
   
@@ -618,8 +619,65 @@
 
   {#if response}
     <div class="response-section">
-      <h3>Response Body:</h3>
-      <pre class="response-body">{response}</pre>
+      <div class="response-header">
+        <h3>Response Body:</h3>
+        <div class="response-tabs">
+          <button 
+            class="tab-button" 
+            class:active={activeResponseTab === 'raw'}
+            onclick={() => activeResponseTab = 'raw'}
+          >
+            📄 Raw
+          </button>
+          <button 
+            class="tab-button" 
+            class:active={activeResponseTab === 'preview'}
+            onclick={() => activeResponseTab = 'preview'}
+          >
+            🌐 Preview
+          </button>
+        </div>
+      </div>
+      
+      <div class="response-content">
+        {#if activeResponseTab === 'raw'}
+          <pre class="response-body">{response}</pre>
+        {:else}
+          <div class="response-preview">
+            {#if url.trim()}
+              <div class="iframe-container">
+                <div class="iframe-header">
+                  <span class="iframe-url">🔗 {url}</span>
+                  <button 
+                    class="refresh-iframe-btn"
+                    onclick={() => {
+                      const iframe = document.querySelector('.response-iframe');
+                      if (iframe) iframe.src = iframe.src;
+                    }}
+                    title="Refresh preview"
+                  >
+                    🔄
+                  </button>
+                </div>
+                <iframe 
+                  class="response-iframe"
+                  src={url.trim()}
+                  title="Response Preview"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                ></iframe>
+              </div>
+            {:else}
+              <div class="preview-placeholder">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">🌐</div>
+                  <div class="placeholder-text">Enter a URL to see the preview</div>
+                  <div class="placeholder-subtext">The iframe will load the response URL here</div>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
   {/if}
 
@@ -1082,6 +1140,57 @@
   width: 100%;
 }
 
+.response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.response-header h3 {
+  margin: 0;
+  color: var(--text-color);
+}
+
+.response-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  border-radius: 8px;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  background-color: color-mix(in srgb, var(--border-color) 20%, transparent 80%);
+}
+
+.tab-button.active {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.response-content {
+  width: 100%;
+}
+
 .response-section h3 {
   margin-bottom: 0.5rem;
 }
@@ -1104,6 +1213,113 @@
   tab-size: 2;
   width: 100%;
   box-sizing: border-box;
+}
+
+.response-preview {
+  width: 100%;
+}
+
+.iframe-container {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.iframe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+}
+
+.iframe-url {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  word-break: break-all;
+  flex: 1;
+}
+
+.refresh-iframe-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.refresh-iframe-btn:hover {
+  background-color: var(--input-bg);
+}
+
+.response-iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+  background-color: white;
+  display: block;
+}
+
+.preview-placeholder {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: color-mix(in srgb, var(--text-color) 60%, transparent 40%);
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.placeholder-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.placeholder-subtext {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .response-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .response-tabs {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .iframe-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .response-iframe {
+    height: 350px;
+  }
 }
 
 :root {
