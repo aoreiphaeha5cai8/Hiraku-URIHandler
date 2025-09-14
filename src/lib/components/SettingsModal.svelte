@@ -42,10 +42,10 @@
         <div class="butterchurn-info">
           <h3>🌈 Butterchurn Visualizer</h3>
           <p>
-            <a href="#" onclick="window.open('https://github.com/jberg/butterchurn', '_blank')">
+            <a href="#" onclick={() => window.open('https://github.com/jberg/butterchurn', '_blank')}>
               Butterchurn
             </a> is a WebGL implementation of the 
-            <a href="#" onclick="window.open('https://www.geisswerks.com/milkdrop/', '_blank')">
+            <a href="#" onclick={() => window.open('https://www.geisswerks.com/milkdrop/', '_blank')}>
               Milkdrop Visualizer
             </a>.
             Licensed under the MIT License.

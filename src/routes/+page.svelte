@@ -9,7 +9,7 @@
 
   // Tab state
   let activeTab = $state('http-client');
-  let theme = $state<'light' | 'dark' | 'system' | 'butterchurn'>('system');
+  let theme = $state<'light' | 'dark' | 'system' | 'blur' | 'butterchurn'>('system');
   
   // Butterchurn state (following breakcorn.ru pattern)
   let butterchurnCanvas: HTMLCanvasElement | null = null;
@@ -90,8 +90,6 @@
         butterchurnCanvas.width = window.innerWidth;
         butterchurnCanvas.height = window.innerHeight;
         
-        // Add canvas with a visible background for debugging
-        butterchurnCanvas.style.border = '2px solid red';
         butterchurnCanvas.id = 'butterchurn-canvas';
         
         document.body.appendChild(butterchurnCanvas);
@@ -286,8 +284,10 @@
     // Setup global functions for audio pipeline like breakcorn.ru
     window.initializeAudioPipeline = (audioContext: AudioContext, source: MediaElementAudioSourceNode) => {
       if (settingsModal) {
+        console.log('Using settings modal audio pipeline');
         return settingsModal.initializeAudioPipeline(audioContext, source);
       }
+      console.log('Settings modal not available, using direct connection');
       return source;
     };
     
@@ -328,6 +328,7 @@
           <option value="system">🖥️ System</option>
           <option value="light">☀️ Light</option>
           <option value="dark">🌙 Dark</option>
+          <option value="blur">✨ Blur</option>
           <option value="butterchurn">🌈 Butterchurn</option>
         </select>
       </div>
@@ -401,8 +402,36 @@
     --shadow: rgba(0, 0, 0, 0.3);
   }
 
+  :global([data-theme="blur"]) {
+    /* Blur glassmorphism theme without Butterchurn */
+    --primary-color: #4fc3f7;
+    --primary-hover: rgba(79, 195, 247, 0.9);
+    --success-color: #00ff88;
+    --success-hover: rgba(0, 255, 136, 0.9);
+    --success-bg: rgba(0, 255, 136, 0.1);
+    --error-color: #ff4081;
+    --error-hover: rgba(255, 64, 129, 0.9);
+    --warning-color: #ffeb3b;
+    --info-bg: rgba(33, 150, 243, 0.1);
+    --text-color: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --bg-color: linear-gradient(135deg, 
+      rgba(30, 30, 60, 0.9) 0%, 
+      rgba(15, 15, 30, 0.95) 50%, 
+      rgba(40, 20, 60, 0.9) 100%);
+    --card-bg: rgba(0, 0, 0, 0.4);
+    --input-bg: rgba(0, 0, 0, 0.3);
+    --secondary-bg: rgba(0, 0, 0, 0.35);
+    --border-color: rgba(255, 255, 255, 0.3);
+    --hover-bg: rgba(0, 0, 0, 0.5);
+    --code-bg: rgba(0, 0, 0, 0.6);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --glass-backdrop: blur(12px);
+    --glass-border: rgba(255, 255, 255, 0.2);
+  }
+
   :global([data-theme="butterchurn"]) {
-    /* Butterchurn glassmorphism theme */
+    /* Butterchurn theme - transparent background for clean canvas rendering */
     --primary-color: #4fc3f7;
     --primary-hover: rgba(79, 195, 247, 0.9);
     --success-color: #00ff88;
@@ -442,7 +471,42 @@
     overflow-x: hidden;
   }
 
-  /* Butterchurn background canvas should be fully visible */
+  /* Blur theme styling */
+  :global([data-theme="blur"]) {
+    background: var(--bg-color);
+  }
+
+  :global([data-theme="blur"] .app-header),
+  :global([data-theme="blur"] .app-main),
+  :global([data-theme="blur"] .app-footer) {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow);
+  }
+
+  :global([data-theme="blur"] input),
+  :global([data-theme="blur"] select),
+  :global([data-theme="blur"] button) {
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  :global([data-theme="blur"] input:focus),
+  :global([data-theme="blur"] select:focus),
+  :global([data-theme="blur"] button:hover) {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+
+  /* Butterchurn theme - clean canvas rendering */
   :global([data-theme="butterchurn"] #butterchurn-canvas) {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -450,14 +514,16 @@
     opacity: 1 !important;
     visibility: visible !important;
     z-index: -1 !important;
+    /* Remove any borders added for debugging */
+    border: none !important;
   }
 
   :global([data-theme="butterchurn"] .app-header),
   :global([data-theme="butterchurn"] .app-main),
   :global([data-theme="butterchurn"] .app-footer) {
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
   }
@@ -466,8 +532,8 @@
   :global([data-theme="butterchurn"] select),
   :global([data-theme="butterchurn"] button) {
     background: rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     color: rgba(255, 255, 255, 0.95) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);

@@ -8,6 +8,8 @@
   let audioContext: AudioContext | null = null;
   let analyser: AnalyserNode | null = null;
   let audioDataArray: Uint8Array | null = null;
+  let sourceNode: MediaElementAudioSourceNode | null = null;
+  let currentSourceIndex = $state(0);
   let currentRequestId = 0; // Track current request to cancel old ones
   let isRetrying = $state(false);
   let retryCount = $state(0);
@@ -15,6 +17,7 @@
   let lastAttemptedUrl = $state("");
   let consecutiveFailures = $state(0);
   let isBlocked = $state(false);
+  let autoSwitchInterval: number | null = null;
 
   const popularStreams = [
     // Original working streams
@@ -403,15 +406,32 @@
   }
 
   function stopRadio() {
+    // Stop playback
     if (audioElement) {
       try {
         audioElement.pause();
-        audioElement.src = "";
+        audioElement.src = ""; // Clear source for streaming
         audioElement.load(); // Reset the audio element
         audioElement = null;
       } catch (e) {
         console.warn('Error stopping audio:', e);
       }
+    }
+    
+    // Clear intervals like breakcorn.ru
+    if (autoSwitchInterval) {
+      clearInterval(autoSwitchInterval);
+      autoSwitchInterval = null;
+    }
+    
+    // Disconnect source node
+    if (sourceNode) {
+      try {
+        sourceNode.disconnect();
+      } catch (e) {
+        console.warn('Error disconnecting source node:', e);
+      }
+      sourceNode = null;
     }
     
     // Clean up audio analysis
@@ -466,23 +486,28 @@
   }
 
   function setupAudioAnalysis() {
-    if (!audioElement || audioContext) return;
+    if (!audioElement || audioContext || sourceNode) return;
     
     try {
       // Create audio context like breakcorn.ru
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
+      // Resume context if suspended (autoplay policy)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       // Create audio source from element like breakcorn
-      const source = audioContext.createMediaElementSource(audioElement);
+      sourceNode = audioContext.createMediaElementSource(audioElement);
       
       // Initialize audio pipeline with compressor if available
-      let finalSource = source;
+      let finalSource = sourceNode;
       if (typeof window !== 'undefined' && window.initializeAudioPipeline) {
-        finalSource = window.initializeAudioPipeline(audioContext, source) || source;
+        finalSource = window.initializeAudioPipeline(audioContext, sourceNode) || sourceNode;
         console.log('Audio pipeline with compressor initialized');
       } else {
         // Fallback: direct connection
-        source.connect(audioContext.destination);
+        sourceNode.connect(audioContext.destination);
       }
       
       // Connect to Butterchurn
@@ -529,20 +554,24 @@
             class="radio-url-input"
             onkeydown={async (e) => e.key === 'Enter' && await playRadio()}
           />
+        <!-- Single Play/Stop button like breakcorn.ru -->
         <button 
-          onclick={() => playRadio()} 
-          disabled={!radioUrl.trim() || isPlaying || isBlocked} 
-          class="play-button"
+          onclick={() => isPlaying ? stopRadio() : playRadio()} 
+          disabled={!radioUrl.trim() || isRetrying || isBlocked} 
+          class="play-stop-button"
+          class:playing={isPlaying}
           class:blocked={isBlocked}
+          class:retrying={isRetrying}
         >
-          {isBlocked ? "⛔ Blocked" : isPlaying ? "⏸️ Playing" : "▶️ Play"}
-        </button>
-        <button 
-          onclick={stopRadio} 
-          disabled={!isPlaying} 
-          class="stop-button"
-        >
-          ⏹️ Stop
+          {#if isRetrying}
+            ⏳ Connecting...
+          {:else if isBlocked}
+            ⛔ Blocked
+          {:else if isPlaying}
+            ⏹️ Stop
+          {:else}
+            ▶️ Play
+          {/if}
         </button>
         
         {#if isBlocked}
@@ -713,7 +742,7 @@
     height: 2.4rem;
   }
 
-  .play-button {
+  .play-stop-button {
     background: var(--success-color, #28a745);
     color: white;
     border: none;
@@ -721,41 +750,56 @@
     padding: 0 1.25rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.25s;
+    transition: all 0.25s;
     white-space: nowrap;
     height: 2.4rem;
+    min-width: 140px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .play-button:hover:not(:disabled) {
+  .play-stop-button:hover:not(:disabled) {
     background: var(--success-hover, #218838);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
   }
 
-  .stop-button {
+  .play-stop-button.playing {
     background: var(--error-color, #dc3545);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0 1.25rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.25s;
-    white-space: nowrap;
-    height: 2.4rem;
+    animation: pulse 2s infinite;
   }
 
-  .stop-button:hover:not(:disabled) {
+  .play-stop-button.playing:hover {
     background: var(--error-hover, #c82333);
   }
 
-  .play-button:disabled,
-  .stop-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .play-stop-button.retrying {
+    background: var(--warning-color, #ffc107);
+    color: var(--text-color, #333333);
+    animation: pulse 1.5s infinite;
   }
 
-  .play-button.blocked {
+  .play-stop-button.blocked {
     background: var(--error-color, #dc3545);
-    color: white;
+    animation: none;
+  }
+
+  .play-stop-button.blocked:hover {
+    background: var(--error-hover, #c82333);
+  }
+
+  .play-stop-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
   }
 
   .reset-button {
