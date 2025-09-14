@@ -328,19 +328,25 @@
 
 .method-select {
   min-width: 100px;
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  background-color: var(--select-bg);
-  color: var(--select-text);
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
   font-size: 1em;
   font-family: inherit;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .url-input {
   flex: 1;
   min-width: 300px;
+  height: 3rem;
+  padding: 0 1.2em;
+  box-sizing: border-box;
 }
 
 .user-agent-row {
@@ -358,28 +364,31 @@
 
 .user-agent-select {
   min-width: 200px;
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  background-color: var(--select-bg);
-  color: var(--select-text);
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
   font-size: 1em;
   font-family: inherit;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .custom-user-agent-input,
 .user-agent-preview {
   flex: 1;
   min-width: 200px;
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: var(--text-color);
-  font-size: 1em;
-  font-family: monospace;
   font-size: 0.9em;
+  font-family: monospace;
+  box-sizing: border-box;
 }
 
 .user-agent-preview {
@@ -435,12 +444,13 @@
 }
 
 .headers-list {
-  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  background-color: var(--input-bg);
   padding: 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
+  margin: 0.5rem 0;
 }
 
 .header-item {
@@ -480,6 +490,9 @@
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
   border: 1px solid var(--border-color);
+  margin: 0;
+  line-height: 1.4;
+  tab-size: 2;
 }
 
 :root {
@@ -569,13 +582,15 @@
 }
 
 .theme-select {
-  padding: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  background-color: var(--select-bg);
-  color: var(--select-text);
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
   font-size: 0.9rem;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 
@@ -603,7 +618,8 @@ input,
 button {
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
@@ -611,6 +627,7 @@ button {
   background-color: var(--input-bg);
   transition: border-color 0.25s, background-color 0.3s, color 0.3s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 button {
@@ -700,42 +717,46 @@ button {
 .header-key-input {
   flex: 1;
   min-width: 0;
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: var(--text-color);
   font-size: 1em;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .header-value-input {
   flex: 2;
   min-width: 0;
-  padding: 0.6em 1.2em;
+  height: 3rem;
+  padding: 0 1.2em;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: var(--text-color);
   font-size: 1em;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .remove-header-btn {
   background: #ff4444;
   color: white;
   border: none;
-  padding: 0.6em;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  min-width: 40px;
-  width: 40px;
-  height: 40px;
+  min-width: 3rem;
+  width: 3rem;
+  height: 3rem;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .remove-header-btn:hover:not(:disabled) {
@@ -752,12 +773,14 @@ button {
   background: #4CAF50;
   color: white;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0 1.2rem;
+  height: 3rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   margin-top: 0.5rem;
   font-size: 1em;
+  box-sizing: border-box;
 }
 
 .add-header-btn:hover {
@@ -779,8 +802,61 @@ select {
 }
 
 select option {
-  background-color: var(--select-bg);
-  color: var(--select-text);
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
+}
+
+/* Fix dropdown appearance for dark themes */
+.dark-theme select,
+.dark-theme .method-select,
+.dark-theme .user-agent-select,
+.dark-theme .theme-select {
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23f6f6f6' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem;
+  padding-right: 2.5rem;
+}
+
+/* System theme dark mode selects */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-theme) select,
+  :root:not(.light-theme) .method-select,
+  :root:not(.light-theme) .user-agent-select,
+  :root:not(.light-theme) .theme-select {
+    background-color: var(--select-bg) !important;
+    color: var(--select-text) !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23f6f6f6' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.75rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Light theme selects */
+.light-theme select,
+.light-theme .method-select,
+.light-theme .user-agent-select,
+.light-theme .theme-select {
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%230f0f0f' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem;
+  padding-right: 2.5rem;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
