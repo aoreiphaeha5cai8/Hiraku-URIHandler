@@ -5,6 +5,9 @@
   let currentStation = $state("");
   let streamInfo = $state<{title?: string, bitrate?: string, format?: string}>({});
   let audioElement: HTMLAudioElement | null = null;
+  let isRetrying = $state(false);
+  let retryCount = $state(0);
+  let maxRetries = 2;
 
   const popularStreams = [
     { 
