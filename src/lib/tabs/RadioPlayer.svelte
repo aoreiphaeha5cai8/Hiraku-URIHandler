@@ -11,40 +11,40 @@
 
   const popularStreams = [
     { 
-      name: "Radio Swiss Jazz", 
-      url: "https://stream.srg-ssr.ch/rsjd/mp3_128.m3u",
-      fallback: "https://stream.srg-ssr.ch/rsjd/mp3_128",
+      name: "🎵 Lofi Hip Hop", 
+      url: "http://stream.zeno.fm/0r0xa792kwzuv",
+      fallback: "https://stream.zeno.fm/0r0xa792kwzuv",
       format: "MP3"
     },
     { 
-      name: "Radio Swiss Pop", 
-      url: "https://stream.srg-ssr.ch/rsp/mp3_128.m3u",
-      fallback: "https://stream.srg-ssr.ch/rsp/mp3_128", 
+      name: "🎶 SomaFM Groove Salad", 
+      url: "http://ice1.somafm.com/groovesalad-256-mp3",
+      fallback: "https://ice1.somafm.com/groovesalad-256-mp3", 
       format: "MP3"
     },
     { 
-      name: "SomaFM Groove Salad", 
-      url: "https://somafm.com/groovesalad256.pls",
-      fallback: "https://ice1.somafm.com/groovesalad-256-mp3",
+      name: "🎧 Calm Radio Jazz", 
+      url: "http://streams.calmradio.com/api/39/128/stream",
+      fallback: "https://streams.calmradio.com/api/39/128/stream",
       format: "MP3"
     },
     { 
-      name: "SomaFM Chillout", 
-      url: "https://somafm.com/dronezone256.pls",
+      name: "🎼 SomaFM Drone Zone", 
+      url: "http://ice1.somafm.com/dronezone-256-mp3",
       fallback: "https://ice1.somafm.com/dronezone-256-mp3",
       format: "MP3"
     },
     { 
-      name: "Demo Audio Stream", 
-      url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
-      fallback: "",
-      format: "WAV"
+      name: "📻 SHOUTcast Example", 
+      url: "http://listen.shoutcast.com/tunein-mp3-pls",
+      fallback: "https://listen.shoutcast.com/tunein-mp3-pls",
+      format: "PLS"
     },
     { 
-      name: "Test Tone (Local)", 
+      name: "🔊 Test Tone (WAV)", 
       url: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+PyvmEaCUOX3/LNeSsFIXFx8OqLQAkRUa7i1aVOIQxKm+fzwmEaBEOS3vLQfC4FHm3r8OyLRwkOSKrj1qVOIgxKm+fzwWFaCUOQ3vLQfC4FHm3r8OyLRAkOSKLj1qRPIgxJm+j1wmE0YKDx5Ni7nzMDAQEAA",
       fallback: "",
-      format: "WAV (Base64)"
+      format: "WAV"
     }
   ];
 
@@ -267,6 +267,10 @@
     isPlaying = false;
     currentStation = "";
     streamInfo = {};
+    isRetrying = false;
+    retryCount = 0;
+    lastAttemptedUrl = "";
+    // Don't reset consecutiveFailures and isBlocked here to maintain circuit breaker state
   }
 
   function stopRadio() {
@@ -290,6 +294,9 @@
   }
 
   async function selectPreset(stream: { name: string, url: string, fallback?: string, format: string }) {
+    // Reset circuit breaker when user manually selects a new station
+    consecutiveFailures = 0;
+    isBlocked = false;
     radioUrl = stream.url;
     await playRadio();
   }
@@ -342,10 +349,11 @@
           />
         <button 
           onclick={() => playRadio()} 
-          disabled={!radioUrl.trim() || isPlaying} 
+          disabled={!radioUrl.trim() || isPlaying || isBlocked} 
           class="play-button"
+          class:blocked={isBlocked}
         >
-          {isPlaying ? "⏸️ Playing" : "▶️ Play"}
+          {isBlocked ? "⛔ Blocked" : isPlaying ? "⏸️ Playing" : "▶️ Play"}
         </button>
         <button 
           onclick={stopRadio} 
@@ -354,6 +362,15 @@
         >
           ⏹️ Stop
         </button>
+        
+        {#if isBlocked}
+          <button 
+            onclick={() => { consecutiveFailures = 0; isBlocked = false; }} 
+            class="reset-button"
+          >
+            🔄 Reset
+          </button>
+        {/if}
       </div>
     </div>
 
@@ -411,7 +428,8 @@
           <button 
             onclick={async () => await selectPreset(stream)} 
             class="preset-button"
-            disabled={isPlaying}
+            disabled={isPlaying || isBlocked}
+            class:blocked-preset={isBlocked}
           >
             <div class="preset-header">
               <span class="preset-name">{stream.name}</span>
@@ -546,6 +564,32 @@
   .play-button:disabled,
   .stop-button:disabled {
     opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .play-button.blocked {
+    background: var(--error-color, #dc3545);
+    color: white;
+  }
+
+  .reset-button {
+    background: var(--warning-color, #ffc107);
+    color: var(--text-color, #333333);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.25s;
+    white-space: nowrap;
+  }
+
+  .reset-button:hover {
+    background: #e0a800;
+  }
+
+  .preset-button.blocked-preset {
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
