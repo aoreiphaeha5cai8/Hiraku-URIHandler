@@ -7,12 +7,12 @@
   let audioElement: HTMLAudioElement | null = null;
 
   const popularStreams = [
-    { name: "BBC Radio 1", url: "http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio1_mf_p" },
-    { name: "NPR News", url: "https://nprhome.streamguys1.com/live.mp3" },
-    { name: "Classical WQXR", url: "https://stream.wqxr.org/wqxr" },
-    { name: "Jazz FM", url: "https://jazzfm.streamguys1.com/live" },
-    { name: "Rock FM", url: "https://rockfm.streamguys1.com/live" },
-    { name: "Chillout Radio", url: "https://chillout.streamguys1.com/live" }
+    { name: "Radio Swiss Jazz", url: "https://stream.srg-ssr.ch/rsjd/mp3_128.m3u" },
+    { name: "Radio Swiss Classic", url: "https://stream.srg-ssr.ch/rsc_de/mp3_128.m3u" },
+    { name: "SomaFM Groove Salad", url: "https://somafm.com/groovesalad256.pls" },
+    { name: "SomaFM Ambient", url: "https://somafm.com/dronezone256.pls" },
+    { name: "Radio Paradise", url: "https://stream.radioparadise.com/aac-320" },
+    { name: "Chillout Radio", url: "https://streams.fluxfm.de/Chillout/mp3-320" }
   ];
 
   function playRadio() {
@@ -24,13 +24,16 @@
     try {
       if (audioElement) {
         audioElement.pause();
+        audioElement = null;
       }
 
-      audioElement = new Audio(radioUrl.trim());
+      audioElement = new Audio();
       audioElement.volume = volume / 100;
+      audioElement.crossOrigin = "anonymous"; // For CORS
       
       audioElement.addEventListener('loadstart', () => {
         currentStation = "Loading...";
+        streamInfo = { title: "Connecting...", format: getAudioFormat(radioUrl) };
       });
       
       audioElement.addEventListener('canplay', () => {
@@ -43,19 +46,39 @@
       });
       
       audioElement.addEventListener('error', (e) => {
-        alert(`Error playing stream: ${e.type}`);
+        console.error('Audio playback error:', e);
+        const errorMsg = e.target?.error ? 
+          `Error playing stream: ${e.target.error.code} - ${getErrorMessage(e.target.error.code)}` :
+          `Error playing stream: ${e.type}`;
+        alert(errorMsg);
         isPlaying = false;
         currentStation = "";
+        streamInfo = {};
       });
       
       audioElement.addEventListener('ended', () => {
         isPlaying = false;
+        currentStation = "";
+        streamInfo = {};
       });
 
-      audioElement.play();
-      isPlaying = true;
+      // Set the source and play
+      audioElement.src = radioUrl.trim();
+      audioElement.load();
+      
+      audioElement.play().then(() => {
+        isPlaying = true;
+      }).catch(error => {
+        console.error('Play promise rejected:', error);
+        alert(`Failed to start playback: ${error.message || 'Unknown error'}`);
+        isPlaying = false;
+        currentStation = "";
+        streamInfo = {};
+      });
+
     } catch (error) {
-      alert(`Error: ${error}`);
+      console.error('Radio playback error:', error);
+      alert(`Error: ${error.message || error}`);
       isPlaying = false;
     }
   }
@@ -94,12 +117,23 @@
   }
 
   function getAudioFormat(url: string): string {
-    if (url.includes('.mp3')) return 'MP3';
-    if (url.includes('.aac')) return 'AAC';
-    if (url.includes('.ogg')) return 'OGG';
-    if (url.includes('.m3u')) return 'M3U Playlist';
-    if (url.includes('.pls')) return 'PLS Playlist';
-    return 'Stream';
+    if (url.includes('.mp3') || url.includes('mp3')) return 'MP3';
+    if (url.includes('.aac') || url.includes('aac')) return 'AAC';
+    if (url.includes('.ogg') || url.includes('ogg')) return 'OGG';
+    if (url.includes('.m3u') || url.includes('m3u')) return 'M3U Playlist';
+    if (url.includes('.pls') || url.includes('pls')) return 'PLS Playlist';
+    if (url.includes('icecast') || url.includes('shoutcast')) return 'Streaming';
+    return 'Audio Stream';
+  }
+
+  function getErrorMessage(errorCode: number): string {
+    switch (errorCode) {
+      case 1: return 'Aborted';
+      case 2: return 'Network error';
+      case 3: return 'Decode error';
+      case 4: return 'Source not supported';
+      default: return 'Unknown error';
+    }
   }
 
   // Update volume when slider changes
@@ -227,8 +261,10 @@
           <ul>
             <li>Use the preset buttons to test popular stations</li>
             <li>Check your volume level before playing</li>
-            <li>Some streams may have geographic restrictions</li>
+            <li>Some streams may have geographic restrictions or CORS issues in browser</li>
             <li>If a stream doesn't work, try a different URL</li>
+            <li>Browser autoplay policies may require user interaction first</li>
+            <li>HTTPS streams work better in modern browsers</li>
           </ul>
         </div>
       </details>

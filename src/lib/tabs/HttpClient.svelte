@@ -274,6 +274,12 @@
     color: var(--text-color, #333333);
     font-weight: 500;
     min-width: 100px;
+    cursor: pointer;
+  }
+
+  .method-select option {
+    background: var(--input-bg, #ffffff);
+    color: var(--text-color, #333333);
   }
 
   .url-input {
@@ -325,6 +331,12 @@
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
     margin-bottom: 0.5rem;
+    cursor: pointer;
+  }
+
+  .user-agent-select option {
+    background: var(--input-bg, #ffffff);
+    color: var(--text-color, #333333);
   }
 
   .custom-user-agent-input {

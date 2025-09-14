@@ -77,9 +77,9 @@
       <div class="theme-selector">
         <label for="theme-select">Theme:</label>
         <select id="theme-select" bind:value={theme} class="theme-select">
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+          <option value="system">🖥️ System</option>
+          <option value="light">☀️ Light</option>
+          <option value="dark">🌙 Dark</option>
         </select>
       </div>
     </div>
@@ -173,6 +173,23 @@
     transition: all 0.25s;
   }
 
+  :global(select) {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  :global(select option) {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  :global(select:focus) {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px;
+    border-color: var(--primary-color) !important;
+  }
+
   :global(input:focus, select:focus, textarea:focus) {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
@@ -242,6 +259,13 @@
     background: var(--input-bg);
     color: var(--text-color);
     font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .theme-select option {
+    background: var(--input-bg);
+    color: var(--text-color);
+    padding: 0.5rem;
   }
 
   .app-main {
