@@ -23,6 +23,12 @@
   let geoIp = $state("");
   let geoResult = $state<{ip: string, country?: string, city?: string, region?: string, org?: string} | null>(null);
   let isGeoLoading = $state(false);
+  let radioUrl = $state("");
+  let isPlaying = $state(false);
+  let volume = $state(70);
+  let currentStation = $state("");
+  let streamInfo = $state<{title?: string, bitrate?: string, format?: string}>({});
+  let audioElement: HTMLAudioElement | null = null;
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
   
@@ -408,6 +414,90 @@
       isGeoLoading = false;
     }
   }
+
+  function initAudioElement() {
+    if (!audioElement && typeof document !== 'undefined') {
+      audioElement = document.createElement('audio');
+      audioElement.crossOrigin = 'anonymous';
+      audioElement.preload = 'none';
+      
+      // Event listeners
+      audioElement.addEventListener('loadstart', () => {
+        streamInfo = { ...streamInfo, title: 'Loading...' };
+      });
+      
+      audioElement.addEventListener('loadeddata', () => {
+        streamInfo = { ...streamInfo, title: currentStation || 'Connected' };
+      });
+      
+      audioElement.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        streamInfo = { ...streamInfo, title: 'Connection error' };
+        isPlaying = false;
+      });
+      
+      audioElement.addEventListener('play', () => {
+        isPlaying = true;
+      });
+      
+      audioElement.addEventListener('pause', () => {
+        isPlaying = false;
+      });
+    }
+  }
+
+  function playRadio() {
+    if (!radioUrl.trim()) return;
+    
+    initAudioElement();
+    if (!audioElement) return;
+    
+    try {
+      audioElement.src = radioUrl.trim();
+      audioElement.volume = volume / 100;
+      audioElement.play();
+      
+      // Extract station name from URL
+      const url = new URL(radioUrl.trim());
+      currentStation = url.hostname || 'Internet Radio';
+      
+      // Mock stream info (real implementation would parse Icecast/Shoutcast metadata)
+      streamInfo = {
+        title: 'Connecting...',
+        bitrate: '128 kbps',
+        format: 'MP3'
+      };
+      
+    } catch (error) {
+      console.error('Failed to play radio:', error);
+      streamInfo = { title: 'Invalid URL or stream unavailable' };
+    }
+  }
+
+  function stopRadio() {
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.src = '';
+      isPlaying = false;
+      streamInfo = {};
+      currentStation = '';
+    }
+  }
+
+  function togglePlayPause() {
+    if (isPlaying) {
+      stopRadio();
+    } else {
+      playRadio();
+    }
+  }
+
+  function updateVolume(newVolume: number) {
+    volume = newVolume;
+    if (audioElement) {
+      audioElement.volume = volume / 100;
+    }
+  }
 </script>
 
 <main class="container">
@@ -713,6 +803,120 @@
         </div>
       </div>
     {/if}
+  </div>
+
+  <div class="radio-section">
+    <h2>Internet Radio Player</h2>
+    <p class="radio-description">Stream internet radio from Icecast2, Shoutcast and other streaming servers</p>
+    
+    <div class="radio-form">
+      <div class="radio-url-row">
+        <input 
+          type="url" 
+          placeholder="Enter radio stream URL (e.g., http://stream.example.com:8000/stream.mp3)" 
+          bind:value={radioUrl} 
+          class="radio-url-input"
+        />
+        <button 
+          type="button" 
+          onclick={togglePlayPause} 
+          class="radio-play-button"
+          class:playing={isPlaying}
+        >
+          {isPlaying ? "⏹️ Stop" : "▶️ Play"}
+        </button>
+      </div>
+      
+      <div class="radio-controls">
+        <div class="volume-control">
+          <label for="volume-slider">Volume:</label>
+          <input 
+            type="range" 
+            id="volume-slider"
+            min="0" 
+            max="100" 
+            bind:value={volume}
+            oninput={(e) => updateVolume(Number((e.target as HTMLInputElement).value))}
+            class="volume-slider"
+          />
+          <span class="volume-value">{volume}%</span>
+        </div>
+      </div>
+    </div>
+
+    {#if currentStation}
+      <div class="radio-info">
+        <h3>Now Playing:</h3>
+        <div class="station-info">
+          <div class="station-card">
+            <div class="station-header">
+              <div class="station-name">{currentStation}</div>
+              <div class="station-status" class:online={isPlaying} class:offline={!isPlaying}>
+                {isPlaying ? "🟢 LIVE" : "🔴 OFFLINE"}
+              </div>
+            </div>
+            
+            {#if streamInfo.title}
+              <div class="stream-title">{streamInfo.title}</div>
+            {/if}
+            
+            <div class="stream-details">
+              {#if streamInfo.format}
+                <div class="stream-detail">
+                  <span class="detail-label">Format:</span>
+                  <span class="detail-value">{streamInfo.format}</span>
+                </div>
+              {/if}
+              {#if streamInfo.bitrate}
+                <div class="stream-detail">
+                  <span class="detail-label">Bitrate:</span>
+                  <span class="detail-value">{streamInfo.bitrate}</span>
+                </div>
+              {/if}
+              <div class="stream-detail">
+                <span class="detail-label">URL:</span>
+                <span class="detail-value stream-url">{radioUrl}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <div class="popular-streams">
+      <h3>Popular Streams:</h3>
+      <p class="popular-streams-note">Try these popular internet radio streams:</p>
+      <div class="stream-presets">
+        <button 
+          type="button" 
+          onclick={() => { radioUrl = 'http://stream.zeno.fm/0r0xa792kwzuv'; }}
+          class="preset-button"
+        >
+          🎵 Lofi Hip Hop
+        </button>
+        <button 
+          type="button" 
+          onclick={() => { radioUrl = 'http://listen.shoutcast.com/tunein-mp3-pls'; }}
+          class="preset-button"
+        >
+          📻 SHOUTcast
+        </button>
+        <button 
+          type="button" 
+          onclick={() => { radioUrl = 'http://ice1.somafm.com/groovesalad-256-mp3'; }}
+          class="preset-button"
+        >
+          🎶 Soma FM Groove
+        </button>
+        <button 
+          type="button" 
+          onclick={() => { radioUrl = 'http://streams.calmradio.com/api/39/128/stream'; }}
+          class="preset-button"
+        >
+          🧘 Calm Radio
+        </button>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -1772,6 +1976,300 @@ select::-webkit-scrollbar-thumb:hover {
   }
   
   .geo-info-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Radio Player Section Styling */
+.radio-section {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.radio-section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.radio-description {
+  margin-bottom: 1.5rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-size: 0.9rem;
+}
+
+.radio-form {
+  margin-bottom: 2rem;
+}
+
+.radio-url-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.radio-url-input {
+  flex: 1;
+  min-width: 350px;
+  height: 3rem;
+  padding: 0 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.radio-play-button {
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #E91E63;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  min-width: 100px;
+}
+
+.radio-play-button:hover {
+  background-color: #C2185B;
+}
+
+.radio-play-button.playing {
+  background-color: #F44336;
+}
+
+.radio-play-button.playing:hover {
+  background-color: #D32F2F;
+}
+
+.radio-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.volume-control label {
+  font-weight: 500;
+  color: var(--text-color);
+  min-width: 60px;
+}
+
+.volume-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--border-color) 50%, transparent 50%);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #E91E63;
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #E91E63;
+  cursor: pointer;
+  border: none;
+}
+
+.volume-value {
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: 40px;
+  text-align: right;
+}
+
+.radio-info {
+  margin-bottom: 2rem;
+}
+
+.radio-info h3 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.station-info {
+  width: 100%;
+}
+
+.station-card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.station-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.station-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.station-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.station-status.online {
+  background-color: #E8F5E8;
+  color: #2E7D2E;
+}
+
+.station-status.offline {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.stream-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.stream-details {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.stream-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 30%, transparent 70%);
+}
+
+.detail-label {
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+}
+
+.detail-value {
+  font-weight: 400;
+  color: var(--text-color);
+  text-align: right;
+}
+
+.stream-url {
+  font-family: monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+  max-width: 300px;
+}
+
+.popular-streams {
+  margin-top: 2rem;
+}
+
+.popular-streams h3 {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.popular-streams-note {
+  margin-bottom: 1rem;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
+  font-size: 0.9rem;
+}
+
+.stream-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.preset-button {
+  height: 3rem;
+  padding: 0 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--button-bg);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-sizing: border-box;
+}
+
+.preset-button:hover {
+  border-color: #E91E63;
+  background-color: color-mix(in srgb, #E91E63 10%, var(--button-bg) 90%);
+}
+
+@media (max-width: 768px) {
+  .radio-url-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .radio-url-input {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 0.5rem;
+  }
+  
+  .station-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .stream-detail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .detail-value {
+    text-align: left;
+  }
+  
+  .stream-presets {
     grid-template-columns: 1fr;
   }
 }
