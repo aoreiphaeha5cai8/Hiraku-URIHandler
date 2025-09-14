@@ -64,9 +64,12 @@
   }
   
   function initializeButterchurn() {
+    console.log('Initializing Butterchurn...');
+    
     try {
       // Create canvas if it doesn't exist
       if (!butterchurnCanvas) {
+        console.log('Creating Butterchurn canvas...');
         butterchurnCanvas = document.createElement('canvas');
         butterchurnCanvas.style.position = 'fixed';
         butterchurnCanvas.style.top = '0';
@@ -75,9 +78,16 @@
         butterchurnCanvas.style.height = '100vh';
         butterchurnCanvas.style.zIndex = '-1';
         butterchurnCanvas.style.pointerEvents = 'none';
+        butterchurnCanvas.style.backgroundColor = 'transparent';
         butterchurnCanvas.width = window.innerWidth;
         butterchurnCanvas.height = window.innerHeight;
+        
+        // Add canvas with a visible background for debugging
+        butterchurnCanvas.style.border = '2px solid red';
+        butterchurnCanvas.id = 'butterchurn-canvas';
+        
         document.body.appendChild(butterchurnCanvas);
+        console.log('Canvas created and appended to body', butterchurnCanvas);
       }
       
       // Create WebGL context
@@ -85,44 +95,54 @@
       
       if (!gl) {
         console.warn('WebGL not supported, falling back to static background');
-        // Create a static animated background instead
+        // Create a vibrant static animated background instead
         butterchurnCanvas.style.background = `
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.3) 0%, transparent 50%)
+          radial-gradient(circle at 20% 80%, rgba(255, 0, 128, 0.6) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.6) 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, rgba(255, 255, 0, 0.6) 0%, transparent 50%)
         `;
         startStaticAnimation();
         return;
       }
       
-      // Initialize butterchurn with audio context
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('WebGL context obtained, creating Butterchurn visualizer...');
       
+      // Initialize butterchurn
       butterchurnInstance = butterchurn.createVisualizer(
         gl,
         butterchurnCanvas.width,
         butterchurnCanvas.height,
         {
-          meshWidth: 32,
-          meshHeight: 24,
-          fps: 30
+          meshWidth: 64,
+          meshHeight: 48,
+          fps: 60
         }
       );
+      
+      console.log('Butterchurn visualizer created:', butterchurnInstance);
       
       // Load a preset
       const presets = butterchurnPresets.getPresets();
       const presetKeys = Object.keys(presets);
       const randomPreset = presets[presetKeys[Math.floor(Math.random() * presetKeys.length)]];
+      console.log('Loading preset:', presetKeys[presetKeys.indexOf(Object.keys(randomPreset)[0])]);
       butterchurnInstance.loadPreset(randomPreset, 0.0);
       
       // Start animation loop
       startButterchurnAnimation();
+      console.log('Butterchurn animation started');
     } catch (error) {
-      console.warn('Failed to initialize Butterchurn:', error);
-      // Fallback to static animated background
+      console.error('Failed to initialize Butterchurn:', error);
+      // Fallback to vibrant static animated background
       if (butterchurnCanvas) {
+        console.log('Using fallback static animation');
         butterchurnCanvas.style.background = `
-          linear-gradient(45deg, rgba(120, 119, 198, 0.2) 0%, rgba(255, 119, 198, 0.2) 50%, rgba(120, 200, 255, 0.2) 100%)
+          linear-gradient(45deg, 
+            rgba(255, 0, 128, 0.7) 0%, 
+            rgba(0, 255, 255, 0.7) 25%,
+            rgba(255, 255, 0, 0.7) 50%,
+            rgba(128, 0, 255, 0.7) 75%,
+            rgba(255, 128, 0, 0.7) 100%)
         `;
         startStaticAnimation();
       }
@@ -131,6 +151,8 @@
   
   function startButterchurnAnimation() {
     if (!butterchurnInstance) return;
+    
+    console.log('Starting Butterchurn animation');
     
     const animate = () => {
       if (theme !== 'butterchurn') return;
@@ -142,11 +164,16 @@
           // Use real audio data from radio player
           audioAnalyser.getByteFrequencyData(audioDataArray);
           audioData = audioDataArray;
+          console.log('Using real audio data, avg level:', audioDataArray.reduce((a, b) => a + b) / audioDataArray.length);
         } else {
-          // Generate fake audio data as fallback
+          // Generate more dynamic fake audio data as fallback
           audioData = new Uint8Array(1024);
+          const time = Date.now() * 0.001;
           for (let i = 0; i < 1024; i++) {
-            audioData[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 64 + 64;
+            audioData[i] = 
+              Math.sin(time * 2 + i * 0.05) * 60 +
+              Math.sin(time * 0.5 + i * 0.02) * 40 +
+              Math.random() * 20 + 90;
           }
         }
         
@@ -154,7 +181,9 @@
         butterchurnInstance.render(audioData, audioData);
         animationFrameId = requestAnimationFrame(animate);
       } catch (error) {
-        console.warn('Butterchurn render error:', error);
+        console.error('Butterchurn render error:', error);
+        // Fall back to static animation on error
+        startStaticAnimation();
       }
     };
     
@@ -163,11 +192,12 @@
   
   function startStaticAnimation() {
     let hue = 0;
+    console.log('Starting static animation fallback');
     
     const animate = () => {
       if (theme !== 'butterchurn' || !butterchurnCanvas) return;
       
-      hue = (hue + 1) % 360;
+      hue = (hue + 2) % 360;
       
       // More dynamic animation that responds to audio if available
       let intensity = 1;
@@ -175,17 +205,21 @@
         audioAnalyser.getByteFrequencyData(audioDataArray);
         // Calculate average intensity from audio
         const sum = audioDataArray.reduce((a, b) => a + b, 0);
-        intensity = 1 + (sum / audioDataArray.length) / 128;
+        intensity = 1 + (sum / audioDataArray.length) / 64; // More sensitive
       }
       
-      const time = Date.now() * 0.001;
+      const time = Date.now() * 0.002; // Faster animation
       butterchurnCanvas.style.background = `
-        radial-gradient(circle at ${50 + 30 * intensity * Math.sin(time)}% ${50 + 20 * intensity * Math.cos(time * 1.5)}%, 
-                       hsla(${hue}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%),
-        radial-gradient(circle at ${50 + 20 * intensity * Math.cos(time * 2)}% ${50 + 30 * intensity * Math.sin(time * 1.2)}%, 
-                       hsla(${(hue + 120) % 360}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%),
-        radial-gradient(circle at ${50 + 25 * intensity * Math.sin(time * 1.8)}% ${50 + 25 * intensity * Math.cos(time * 0.8)}%, 
-                       hsla(${(hue + 240) % 360}, 70%, ${40 + intensity * 20}%, ${0.2 + intensity * 0.1}) 0%, transparent 50%)
+        radial-gradient(circle at ${50 + 40 * intensity * Math.sin(time)}% ${50 + 30 * intensity * Math.cos(time * 1.5)}%, 
+                       hsla(${hue}, 90%, ${60 + intensity * 20}%, ${0.6 + intensity * 0.2}) 0%, transparent 70%),
+        radial-gradient(circle at ${50 + 30 * intensity * Math.cos(time * 1.3)}% ${50 + 40 * intensity * Math.sin(time * 1.1)}%, 
+                       hsla(${(hue + 120) % 360}, 90%, ${60 + intensity * 20}%, ${0.6 + intensity * 0.2}) 0%, transparent 70%),
+        radial-gradient(circle at ${50 + 35 * intensity * Math.sin(time * 0.8)}% ${50 + 35 * intensity * Math.cos(time * 2.1)}%, 
+                       hsla(${(hue + 240) % 360}, 90%, ${60 + intensity * 20}%, ${0.6 + intensity * 0.2}) 0%, transparent 70%),
+        linear-gradient(${hue}deg, 
+                       hsla(${hue}, 50%, 30%, 0.1) 0%, 
+                       hsla(${(hue + 60) % 360}, 50%, 30%, 0.1) 50%,
+                       hsla(${(hue + 120) % 360}, 50%, 30%, 0.1) 100%)
       `;
       
       animationFrameId = requestAnimationFrame(animate);
@@ -380,11 +414,14 @@
     overflow-x: hidden;
   }
 
-  /* Butterchurn background canvas should not be blurred */
-  :global([data-theme="butterchurn"] canvas) {
+  /* Butterchurn background canvas should be fully visible */
+  :global([data-theme="butterchurn"] #butterchurn-canvas) {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: -1 !important;
   }
 
   :global([data-theme="butterchurn"] .app-header),
