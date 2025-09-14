@@ -97,9 +97,26 @@
     }
   }
   
-  // Apply theme on change
+  // Apply theme on mount and change
   $effect(() => {
-    applyTheme();
+    if (typeof document !== 'undefined') {
+      applyTheme();
+    }
+  });
+  
+  // Listen for system theme changes when in system mode
+  $effect(() => {
+    if (typeof window !== 'undefined' && theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        if (theme === 'system') {
+          applySystemTheme();
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
   });
 
   async function makeRequest(event: Event) {
