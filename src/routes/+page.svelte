@@ -771,4 +771,34 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Enhanced select styling for better theme support */
+select {
+  background-color: var(--select-bg) !important;
+  color: var(--select-text) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+select option {
+  background-color: var(--select-bg);
+  color: var(--select-text);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+select::-webkit-scrollbar {
+  width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+  background: var(--select-bg);
+}
+
+select::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+}
+
 </style>
