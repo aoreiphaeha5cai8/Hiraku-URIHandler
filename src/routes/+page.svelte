@@ -3,12 +3,40 @@
 
   let url = $state("");
   let method = $state("GET");
+  let userAgent = $state("custom");
+  let customUserAgent = $state("");
   let response = $state("");
   let isLoading = $state(false);
   let statusCode = $state<number | null>(null);
   let headers = $state<Record<string, string>>({});
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
+  
+  const userAgents = {
+    "custom": { name: "Custom", value: "" },
+    "chrome-windows": { name: "Chrome (Windows)", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+    "chrome-mac": { name: "Chrome (macOS)", value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+    "firefox-windows": { name: "Firefox (Windows)", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0" },
+    "firefox-mac": { name: "Firefox (macOS)", value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0" },
+    "safari-mac": { name: "Safari (macOS)", value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15" },
+    "safari-ios": { name: "Safari (iOS)", value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1" },
+    "edge-windows": { name: "Edge (Windows)", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0" },
+    "curl": { name: "curl", value: "curl/8.4.0" },
+    "wget": { name: "wget", value: "Wget/1.21.4" },
+    "googlebot": { name: "Googlebot", value: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+    "bingbot": { name: "Bingbot", value: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)" },
+    "yandexbot": { name: "YandexBot", value: "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)" },
+    "facebookbot": { name: "Facebook Bot", value: "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)" },
+    "twitterbot": { name: "Twitter Bot", value: "Twitterbot/1.0" },
+    "linkedinbot": { name: "LinkedIn Bot", value: "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)" }
+  };
+  
+  function getEffectiveUserAgent(): string {
+    if (userAgent === "custom") {
+      return customUserAgent.trim();
+    }
+    return userAgents[userAgent as keyof typeof userAgents]?.value || "";
+  }
 
   async function makeRequest(event: Event) {
     event.preventDefault();
@@ -24,7 +52,12 @@
     headers = {};
 
     try {
-      const result = await invoke("make_http_request", { url: url.trim(), method });
+      const effectiveUserAgent = getEffectiveUserAgent();
+      const result = await invoke("make_http_request", { 
+        url: url.trim(), 
+        method, 
+        userAgent: effectiveUserAgent || null 
+      });
       
       if (result && typeof result === 'object') {
         const httpResponse = result as { status: number; headers: Record<string, string>; body: string };
@@ -71,6 +104,30 @@
       <button type="submit" disabled={isLoading}>
         {isLoading ? "Loading..." : "Send Request"}
       </button>
+    </div>
+    
+    <div class="user-agent-row">
+      <label for="user-agent-select">User-Agent:</label>
+      <select bind:value={userAgent} id="user-agent-select" class="user-agent-select">
+        {#each Object.entries(userAgents) as [key, ua]}
+          <option value={key}>{ua.name}</option>
+        {/each}
+      </select>
+      {#if userAgent === "custom"}
+        <input 
+          type="text" 
+          placeholder="Enter custom User-Agent" 
+          bind:value={customUserAgent} 
+          class="custom-user-agent-input"
+        />
+      {:else}
+        <input 
+          type="text" 
+          value={userAgents[userAgent as keyof typeof userAgents]?.value || ""} 
+          class="user-agent-preview"
+          readonly
+        />
+      {/if}
     </div>
   </form>
 
@@ -128,6 +185,49 @@
 .url-input {
   flex: 1;
   min-width: 300px;
+}
+
+.user-agent-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.user-agent-row label {
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.user-agent-select {
+  min-width: 200px;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+  font-size: 1em;
+  font-family: inherit;
+}
+
+.custom-user-agent-input,
+.user-agent-preview {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+  font-size: 1em;
+  font-family: inherit;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.user-agent-preview {
+  background-color: #f8f8f8;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .status-info {
@@ -309,6 +409,22 @@ button {
     width: 100%;
     margin-bottom: 0.5rem;
   }
+  
+  .user-agent-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .user-agent-row label {
+    margin-bottom: 0.25rem;
+  }
+  
+  .user-agent-select,
+  .custom-user-agent-input,
+  .user-agent-preview {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -323,10 +439,16 @@ button {
 
   input,
   button,
-  .method-select {
+  .method-select,
+  .user-agent-select {
     color: #ffffff;
     background-color: #0f0f0f98;
     border-color: #555;
+  }
+  
+  .user-agent-preview {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #aaa;
   }
   
   button:active {

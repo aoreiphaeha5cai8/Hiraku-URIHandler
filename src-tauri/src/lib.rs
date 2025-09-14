@@ -14,18 +14,28 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-async fn make_http_request(url: String, method: String) -> Result<HttpResponse, String> {
+async fn make_http_request(url: String, method: String, user_agent: Option<String>) -> Result<HttpResponse, String> {
     let client = reqwest::Client::new();
     
-    let response = match method.to_uppercase().as_str() {
-        "GET" => client.get(&url).send().await,
-        "POST" => client.post(&url).send().await,
-        "PUT" => client.put(&url).send().await,
-        "DELETE" => client.delete(&url).send().await,
-        "PATCH" => client.patch(&url).send().await,
-        "HEAD" => client.head(&url).send().await,
+    // Build request with optional User-Agent
+    let mut request_builder = match method.to_uppercase().as_str() {
+        "GET" => client.get(&url),
+        "POST" => client.post(&url),
+        "PUT" => client.put(&url),
+        "DELETE" => client.delete(&url),
+        "PATCH" => client.patch(&url),
+        "HEAD" => client.head(&url),
         _ => return Err(format!("Unsupported HTTP method: {}", method)),
     };
+    
+    // Add User-Agent header if provided
+    if let Some(ua) = user_agent {
+        if !ua.trim().is_empty() {
+            request_builder = request_builder.header("User-Agent", ua);
+        }
+    }
+    
+    let response = request_builder.send().await;
 
     match response {
         Ok(resp) => {
