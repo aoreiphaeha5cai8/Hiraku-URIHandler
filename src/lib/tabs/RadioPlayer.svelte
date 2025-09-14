@@ -7,15 +7,45 @@
   let audioElement: HTMLAudioElement | null = null;
 
   const popularStreams = [
-    { name: "Radio Swiss Jazz", url: "https://stream.srg-ssr.ch/rsjd/mp3_128" },
-    { name: "Radio Swiss Classic", url: "https://stream.srg-ssr.ch/rsc_de/mp3_128" },
-    { name: "SomaFM Groove Salad", url: "https://ice1.somafm.com/groovesalad-256-mp3" },
-    { name: "SomaFM Drone Zone", url: "https://ice1.somafm.com/dronezone-256-mp3" },
-    { name: "Radio Paradise", url: "https://stream.radioparadise.com/aac-320" },
-    { name: "Venice Classic Radio", url: "https://109.123.116.202:8022/stream" }
+    { 
+      name: "Radio Swiss Jazz", 
+      url: "https://stream.srg-ssr.ch/rsjd/mp3_128.m3u",
+      fallback: "https://stream.srg-ssr.ch/rsjd/mp3_128",
+      format: "MP3"
+    },
+    { 
+      name: "Radio Swiss Pop", 
+      url: "https://stream.srg-ssr.ch/rsp/mp3_128.m3u",
+      fallback: "https://stream.srg-ssr.ch/rsp/mp3_128", 
+      format: "MP3"
+    },
+    { 
+      name: "SomaFM Groove Salad", 
+      url: "https://somafm.com/groovesalad256.pls",
+      fallback: "https://ice1.somafm.com/groovesalad-256-mp3",
+      format: "MP3"
+    },
+    { 
+      name: "SomaFM Chillout", 
+      url: "https://somafm.com/dronezone256.pls",
+      fallback: "https://ice1.somafm.com/dronezone-256-mp3",
+      format: "MP3"
+    },
+    { 
+      name: "Demo Audio Stream", 
+      url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+      fallback: "",
+      format: "WAV"
+    },
+    { 
+      name: "Test Tone (Local)", 
+      url: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+PyvmEaCUOX3/LNeSsFIXFx8OqLQAkRUa7i1aVOIQxKm+fzwmEaBEOS3vLQfC4FHm3r8OyLRwkOSKrj1qVOIgxKm+fzwWFaCUOQ3vLQfC4FHm3r8OyLRAkOSKLj1qRPIgxJm+j1wmE0YKDx5Ni7nzMDAQEAA",
+      fallback: "",
+      format: "WAV (Base64)"
+    }
   ];
 
-  async function playRadio() {
+  async function playRadio(retryWithFallback: boolean = false) {
     if (!radioUrl.trim()) {
       alert("Please enter a radio stream URL");
       return;
@@ -24,26 +54,35 @@
     // Stop current playback first
     if (audioElement) {
       stopRadio();
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+      await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
     }
 
     try {
-      const url = await resolveStreamUrl(radioUrl.trim());
+      const url = await resolveStreamUrl(radioUrl.trim(), retryWithFallback);
+      console.log('Attempting to play:', url);
       
       audioElement = new Audio();
       audioElement.volume = volume / 100;
-      audioElement.preload = "none";
+      audioElement.preload = "metadata";
+      audioElement.crossOrigin = "anonymous";
       
       // Set up event listeners before setting src
-      setupAudioEventListeners();
+      setupAudioEventListeners(retryWithFallback);
       
       // Set initial state
-      currentStation = "Connecting...";
+      currentStation = retryWithFallback ? "Trying fallback..." : "Connecting...";
       streamInfo = { title: "Loading...", format: getAudioFormat(url) };
       
       // Set source and load
       audioElement.src = url;
       audioElement.load();
+      
+      // Add a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        if (audioElement && !isPlaying) {
+          handlePlayError(new Error('Connection timeout'));
+        }
+      }, 10000); // 10 second timeout
       
       // Try to play with proper error handling
       const playPromise = audioElement.play();
@@ -51,23 +90,25 @@
       if (playPromise !== undefined) {
         try {
           await playPromise;
+          clearTimeout(timeoutId);
           isPlaying = true;
         } catch (error) {
-          handlePlayError(error);
+          clearTimeout(timeoutId);
+          handlePlayError(error, retryWithFallback);
         }
       }
 
     } catch (error) {
       console.error('Radio setup error:', error);
-      handlePlayError(error);
+      handlePlayError(error, retryWithFallback);
     }
   }
 
-  function setupAudioEventListeners() {
+  function setupAudioEventListeners(isRetry: boolean = false) {
     if (!audioElement) return;
     
     audioElement.addEventListener('loadstart', () => {
-      currentStation = "Loading...";
+      currentStation = isRetry ? "Retrying..." : "Loading...";
     });
     
     audioElement.addEventListener('canplay', () => {
@@ -82,86 +123,140 @@
     audioElement.addEventListener('error', (e) => {
       const error = e.target?.error;
       console.error('Audio element error:', error);
-      handleAudioError(error);
+      handleAudioError(error, isRetry);
     });
     
     audioElement.addEventListener('ended', () => {
+      console.log('Stream ended');
       resetPlayerState();
     });
     
     audioElement.addEventListener('abort', () => {
       console.log('Audio loading aborted');
-      resetPlayerState();
+      if (!isRetry) {
+        // Try fallback on abort
+        setTimeout(() => playRadio(true), 1000);
+      } else {
+        resetPlayerState();
+      }
     });
     
     audioElement.addEventListener('stalled', () => {
-      console.warn('Audio stream stalled');
+      console.warn('Audio stream stalled, trying to recover...');
+    });
+    
+    audioElement.addEventListener('waiting', () => {
+      console.log('Audio buffering...');
     });
   }
   
-  async function resolveStreamUrl(url: string): Promise<string> {
-    // Handle playlist files
-    if (url.includes('.m3u') || url.includes('.pls')) {
+  async function resolveStreamUrl(url: string, useFallback: boolean = false): Promise<string> {
+    // Find the stream object for fallback support
+    const streamObj = popularStreams.find(s => s.url === url || s.fallback === url);
+    
+    if (useFallback && streamObj?.fallback) {
+      console.log('Using fallback URL:', streamObj.fallback);
+      return streamObj.fallback;
+    }
+    
+    // Handle playlist files by converting to direct streams
+    if (url.includes('.m3u') && !useFallback) {
       try {
-        // For demo purposes, we'll try to extract direct stream URLs
-        // In a real implementation, you'd parse the playlist file
         if (url.includes('srg-ssr.ch')) {
           return url.replace('.m3u', '');
         }
-        if (url.includes('somafm.com') && url.includes('.pls')) {
-          return url.replace('.pls', '');
-        }
       } catch (e) {
-        console.warn('Could not resolve playlist URL, using original:', e);
+        console.warn('Could not resolve M3U URL:', e);
       }
     }
+    
+    if (url.includes('.pls') && !useFallback) {
+      try {
+        if (url.includes('somafm.com')) {
+          // Convert SomaFM PLS to direct stream
+          const streamName = url.split('/').pop()?.replace('.pls', '');
+          if (streamName) {
+            return `https://ice1.somafm.com/${streamName}-256-mp3`;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not resolve PLS URL:', e);
+      }
+    }
+    
     return url;
   }
   
-  function handlePlayError(error: any) {
+  function handlePlayError(error: any, wasRetry: boolean = false) {
     console.error('Play error:', error);
     
     let userMessage = "Failed to play stream: ";
+    let shouldRetry = false;
     
     if (error.name === 'NotAllowedError') {
-      userMessage += "Browser requires user interaction to play audio. Please click the Play button.";
+      userMessage += "Browser requires user interaction to play audio. Please click the Play button manually.";
     } else if (error.name === 'NotSupportedError') {
       userMessage += "This audio format is not supported by your browser.";
+      shouldRetry = !wasRetry;
     } else if (error.name === 'AbortError') {
-      userMessage += "Playback was interrupted. Please try again.";
+      userMessage += "Playback was interrupted.";
+      shouldRetry = !wasRetry;
+    } else if (error.message?.includes('timeout')) {
+      userMessage += "Connection timed out.";
+      shouldRetry = !wasRetry;
     } else {
-      userMessage += error.message || "Unknown error occurred.";
+      userMessage += error.message || "Network or stream error occurred.";
+      shouldRetry = !wasRetry;
     }
     
-    alert(userMessage);
+    // Try fallback URL if this was the first attempt
+    if (shouldRetry) {
+      console.log('Attempting fallback stream...');
+      setTimeout(() => playRadio(true), 1500);
+      return;
+    }
+    
+    alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
-  function handleAudioError(error: any) {
+  function handleAudioError(error: any, wasRetry: boolean = false) {
     let userMessage = "Stream error: ";
+    let shouldRetry = false;
     
     if (error) {
       switch (error.code) {
         case 1:
           userMessage += "Loading was aborted.";
+          shouldRetry = !wasRetry;
           break;
         case 2:
           userMessage += "Network error - check your connection.";
+          shouldRetry = !wasRetry;
           break;
         case 3:
-          userMessage += "Audio format not supported.";
+          userMessage += "Audio format decode error.";
+          shouldRetry = !wasRetry;
           break;
         case 4:
           userMessage += "Stream source not found or not accessible.";
+          shouldRetry = !wasRetry;
           break;
         default:
-          userMessage += "Unknown error occurred.";
+          userMessage += "Unknown media error occurred.";
       }
     } else {
       userMessage += "Unable to load stream.";
     }
     
-    alert(userMessage);
+    // Try fallback URL if this was the first attempt and we have a fallback
+    if (shouldRetry) {
+      console.log('Media error, attempting fallback stream...');
+      setTimeout(() => playRadio(true), 2000);
+      return;
+    }
+    
+    alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
@@ -191,7 +286,7 @@
     }
   }
 
-  async function selectPreset(stream: { name: string, url: string }) {
+  async function selectPreset(stream: { name: string, url: string, fallback?: string, format: string }) {
     radioUrl = stream.url;
     await playRadio();
   }
@@ -315,8 +410,14 @@
             class="preset-button"
             disabled={isPlaying}
           >
-            <div class="preset-name">{stream.name}</div>
+            <div class="preset-header">
+              <span class="preset-name">{stream.name}</span>
+              <span class="preset-format">{stream.format}</span>
+            </div>
             <div class="preset-url">{stream.url}</div>
+            {#if stream.fallback}
+              <div class="preset-fallback">Fallback: {stream.fallback}</div>
+            {/if}
           </button>
         {/each}
       </div>
@@ -571,15 +672,38 @@
     cursor: not-allowed;
   }
 
+  .preset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
   .preset-name {
     font-weight: 500;
     color: var(--text-color, #333333);
-    margin-bottom: 0.25rem;
+  }
+
+  .preset-format {
+    font-size: 0.75rem;
+    background: var(--primary-color, #007acc);
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-weight: 500;
   }
 
   .preset-url {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary, #666666);
+    word-break: break-all;
+    margin-bottom: 0.25rem;
+  }
+
+  .preset-fallback {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #666666);
+    opacity: 0.7;
     word-break: break-all;
   }
 
