@@ -61,6 +61,33 @@
     return headersObj;
   }
   
+  function applySystemTheme() {
+    const root = document.documentElement;
+    const isDarkSystem = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // System automatically detects dark/light preference
+    
+    if (isDarkSystem) {
+      // Dark system theme
+      root.style.setProperty('--bg-color', '#1a1a1a');
+      root.style.setProperty('--text-color', '#f6f6f6');
+      root.style.setProperty('--border-color', '#555');
+      root.style.setProperty('--input-bg', '#2d2d2d');
+      root.style.setProperty('--button-bg', '#2d2d2d');
+      root.style.setProperty('--select-bg', '#2d2d2d');
+      root.style.setProperty('--select-text', '#f6f6f6');
+    } else {
+      // Light system theme  
+      root.style.setProperty('--bg-color', '#f6f6f6');
+      root.style.setProperty('--text-color', '#0f0f0f');
+      root.style.setProperty('--border-color', '#ccc');
+      root.style.setProperty('--input-bg', '#ffffff');
+      root.style.setProperty('--button-bg', '#ffffff');
+      root.style.setProperty('--select-bg', '#ffffff');
+      root.style.setProperty('--select-text', '#0f0f0f');
+    }
+  }
+
   function applyTheme() {
     const root = document.documentElement;
     
@@ -85,14 +112,8 @@
       root.classList.add("light-theme");
       root.classList.remove("dark-theme");
     } else {
-      // System theme - reset to default
-      root.style.setProperty('--bg-color', '#f6f6f6');
-      root.style.setProperty('--text-color', '#0f0f0f');
-      root.style.setProperty('--border-color', '#ccc');
-      root.style.setProperty('--input-bg', '#ffffff');
-      root.style.setProperty('--button-bg', '#ffffff');
-      root.style.setProperty('--select-bg', '#ffffff');
-      root.style.setProperty('--select-text', '#0f0f0f');
+      // System theme - follow system preferences
+      applySystemTheme();
       root.classList.remove("dark-theme", "light-theme");
     }
   }
@@ -447,7 +468,8 @@
 }
 
 .response-body {
-  background-color: #f4f4f4;
+  background-color: var(--input-bg);
+  color: var(--text-color);
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -457,7 +479,7 @@
   overflow-y: auto;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
 }
 
 :root {
