@@ -471,6 +471,7 @@
 .response-section {
   margin-top: 2rem;
   text-align: left;
+  width: 100%;
 }
 
 .response-section h3 {
