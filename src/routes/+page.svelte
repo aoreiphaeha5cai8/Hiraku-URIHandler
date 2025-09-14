@@ -671,15 +671,7 @@
   justify-content: center;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
 
-a:hover {
-  color: #535bf2;
-}
 
 h1 {
   text-align: center;
@@ -858,12 +850,7 @@ button {
   background: #45a049;
 }
 
-/* Dark theme fix */
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
+
 
 /* Enhanced select styling for better theme support */
 select {
@@ -875,23 +862,6 @@ select {
 select option {
   background-color: var(--select-bg) !important;
   color: var(--select-text) !important;
-}
-
-/* Fix dropdown appearance for dark themes */
-.dark-theme select,
-.dark-theme .method-select,
-.dark-theme .user-agent-select,
-.dark-theme .theme-select {
-  background-color: var(--select-bg) !important;
-  color: var(--select-text) !important;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23f6f6f6' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 0.75rem;
-  padding-right: 2.5rem;
 }
 
 /* System theme dark mode selects */
@@ -911,23 +881,6 @@ select option {
     background-size: 0.75rem;
     padding-right: 2.5rem;
   }
-}
-
-/* Light theme selects */
-.light-theme select,
-.light-theme .method-select,
-.light-theme .user-agent-select,
-.light-theme .theme-select {
-  background-color: var(--select-bg) !important;
-  color: var(--select-text) !important;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%230f0f0f' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 0.75rem;
-  padding-right: 2.5rem;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */

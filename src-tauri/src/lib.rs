@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::net::{ToSocketAddrs, Ipv4Addr, Ipv6Addr};
+use std::net::ToSocketAddrs;
 
 #[derive(Serialize, Deserialize)]
 struct HttpResponse {
