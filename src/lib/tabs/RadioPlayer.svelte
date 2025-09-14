@@ -50,7 +50,7 @@
 
   async function playRadio(retryWithFallback: boolean = false) {
     if (!radioUrl.trim()) {
-      alert("Please enter a radio stream URL");
+      console.log("ALERT:", arguments[0]); alert("Please enter a radio stream URL");
       return;
     }
 
@@ -219,7 +219,7 @@
       return;
     }
     
-    alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
+    console.log("ALERT:", arguments[0]); alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
@@ -259,7 +259,7 @@
       return;
     }
     
-    alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
+    console.log("ALERT:", arguments[0]); alert(userMessage + (wasRetry ? " (Fallback also failed)" : ""));
     resetPlayerState();
   }
   
