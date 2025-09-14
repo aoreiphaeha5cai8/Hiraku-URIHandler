@@ -13,6 +13,7 @@
   let isBlocked = $state(false);
 
   const popularStreams = [
+    // Original working streams
     { 
       name: "🎵 Lofi Hip Hop", 
       url: "http://stream.zeno.fm/0r0xa792kwzuv",
@@ -37,6 +38,60 @@
       fallback: "https://ice1.somafm.com/dronezone-256-mp3",
       format: "MP3"
     },
+    
+    // Electronic & Breakcore stations
+    { 
+      name: "🔥 Breakcorn Radio - Main", 
+      url: "https://stream.breakcorn.ru/main",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "🎹 Breakcorn Radio - Mezzo", 
+      url: "https://stream.breakcorn.ru/mezzo",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "🤖 Breakcore Mashcore Radio", 
+      url: "https://radio.mosco.win/play",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "⛵ Nautic Radio Groningen", 
+      url: "http://stream.nauticradio.net:14280/",
+      fallback: "",
+      format: "MP3"
+    },
+    
+    // Radio Schizoid channels
+    { 
+      name: "🌊 Radio Schizoid - Chillout", 
+      url: "http://94.130.113.214:8000/chill",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "🌌 Radio Schizoid - Dub Techno", 
+      url: "http://94.130.113.214:8000/dubtechno",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "🌀 Radio Schizoid - Progressive", 
+      url: "http://94.130.113.214:8000/prog",
+      fallback: "",
+      format: "MP3"
+    },
+    { 
+      name: "🌍 Radio Schizoid - PsyTrance", 
+      url: "http://94.130.113.214:8000/schizoid",
+      fallback: "",
+      format: "MP3"
+    },
+    
+    // Test & Demo
     { 
       name: "📻 SHOUTcast Example", 
       url: "http://listen.shoutcast.com/tunein-mp3-pls",
@@ -425,7 +480,8 @@
     {/if}
 
     <div class="presets-section">
-      <h3>🌐 Popular Streams:</h3>
+      <h3>🌐 Radio Stations:</h3>
+      <p class="presets-description">Choose from various genres: Lofi, Electronic, Breakcore, PsyTrance, Chillout</p>
       <div class="stream-presets">
         {#each popularStreams as stream}
           <button 
@@ -691,8 +747,15 @@
   }
 
   .presets-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     color: var(--text-color, #333333);
+  }
+
+  .presets-description {
+    color: var(--text-secondary, #666666);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    font-style: italic;
   }
 
   .stream-presets {
@@ -700,6 +763,12 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--secondary-bg, #f5f5f5);
   }
 
   .preset-button {
@@ -727,11 +796,15 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .preset-name {
     font-weight: 500;
     color: var(--text-color, #333333);
+    font-size: 0.9rem;
+    flex: 1;
   }
 
   .preset-format {
@@ -744,10 +817,11 @@
   }
 
   .preset-url {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-secondary, #666666);
     word-break: break-all;
     margin-bottom: 0.25rem;
+    line-height: 1.3;
   }
 
   .preset-fallback {
