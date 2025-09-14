@@ -8,6 +8,9 @@
   let isRetrying = $state(false);
   let retryCount = $state(0);
   let maxRetries = 2;
+  let lastAttemptedUrl = $state("");
+  let consecutiveFailures = $state(0);
+  let isBlocked = $state(false);
 
   const popularStreams = [
     { 
