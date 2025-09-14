@@ -63,14 +63,36 @@
   
   function applyTheme() {
     const root = document.documentElement;
+    
     if (theme === "dark") {
+      root.style.setProperty('--bg-color', '#1a1a1a');
+      root.style.setProperty('--text-color', '#f6f6f6');
+      root.style.setProperty('--border-color', '#555');
+      root.style.setProperty('--input-bg', '#2d2d2d');
+      root.style.setProperty('--button-bg', '#2d2d2d');
+      root.style.setProperty('--select-bg', '#2d2d2d');
+      root.style.setProperty('--select-text', '#f6f6f6');
       root.classList.add("dark-theme");
       root.classList.remove("light-theme");
     } else if (theme === "light") {
+      root.style.setProperty('--bg-color', '#ffffff');
+      root.style.setProperty('--text-color', '#0f0f0f');
+      root.style.setProperty('--border-color', '#ddd');
+      root.style.setProperty('--input-bg', '#ffffff');
+      root.style.setProperty('--button-bg', '#ffffff');
+      root.style.setProperty('--select-bg', '#ffffff');
+      root.style.setProperty('--select-text', '#0f0f0f');
       root.classList.add("light-theme");
       root.classList.remove("dark-theme");
     } else {
-      // System theme
+      // System theme - reset to default
+      root.style.setProperty('--bg-color', '#f6f6f6');
+      root.style.setProperty('--text-color', '#0f0f0f');
+      root.style.setProperty('--border-color', '#ccc');
+      root.style.setProperty('--input-bg', '#ffffff');
+      root.style.setProperty('--button-bg', '#ffffff');
+      root.style.setProperty('--select-bg', '#ffffff');
+      root.style.setProperty('--select-text', '#0f0f0f');
       root.classList.remove("dark-theme", "light-theme");
     }
   }
@@ -458,13 +480,13 @@
 }
 
 .dark-theme {
-  --bg-color: #1a1a1a;
-  --text-color: #f6f6f6;
-  --border-color: #555;
-  --input-bg: #2d2d2d;
-  --button-bg: #2d2d2d;
-  --select-bg: #2d2d2d;
-  --select-text: #f6f6f6;
+  --bg-color: #1a1a1a !important;
+  --text-color: #f6f6f6 !important;
+  --border-color: #555 !important;
+  --input-bg: #2d2d2d !important;
+  --button-bg: #2d2d2d !important;
+  --select-bg: #2d2d2d !important;
+  --select-text: #f6f6f6 !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -598,6 +620,116 @@ button {
   }
 }
 
-/* Old dark theme styles removed - now using CSS custom properties */
+/* Headers styling */
+.headers-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.headers-toggle {
+  margin-bottom: 1rem;
+}
+
+.headers-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.headers-toggle input[type="checkbox"] {
+  margin: 0;
+  padding: 0;
+  width: auto;
+}
+
+.custom-headers {
+  margin-top: 1rem;
+}
+
+.header-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.header-key-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+}
+
+.header-value-input {
+  flex: 2;
+  min-width: 0;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1em;
+  font-family: inherit;
+}
+
+.remove-header-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 0.6em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-width: 40px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-header-btn:hover:not(:disabled) {
+  background: #cc3333;
+}
+
+.remove-header-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.add-header-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  font-size: 1em;
+}
+
+.add-header-btn:hover {
+  background: #45a049;
+}
+
+/* Dark theme fix */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
 </style>
