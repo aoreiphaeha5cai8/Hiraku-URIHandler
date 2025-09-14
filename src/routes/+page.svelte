@@ -177,16 +177,34 @@
     background: var(--input-bg) !important;
     color: var(--text-color) !important;
     border: 1px solid var(--border-color) !important;
+    /* Webkit specific styles */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666666'><path d='M7 10l5 5 5-5z'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+    background-size: 20px !important;
+    padding-right: 35px !important;
+  }
+
+  :global([data-theme="dark"] select) {
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b0b0b0'><path d='M7 10l5 5 5-5z'/></svg>") !important;
   }
 
   :global(select option) {
     background: var(--input-bg) !important;
     color: var(--text-color) !important;
+    padding: 8px 12px !important;
   }
 
   :global(select:focus) {
     outline: 2px solid var(--primary-color) !important;
     outline-offset: 2px;
+    border-color: var(--primary-color) !important;
+  }
+
+  :global(select:hover) {
     border-color: var(--primary-color) !important;
   }
 
@@ -253,19 +271,43 @@
   }
 
   .theme-select {
-    padding: 0.5rem;
+    padding: 0.5rem 2rem 0.5rem 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     background: var(--input-bg);
     color: var(--text-color);
     font-size: 0.9rem;
     cursor: pointer;
+    min-width: 120px;
+    /* Remove default styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Custom arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666666'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+  }
+
+  :global([data-theme="dark"]) .theme-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b0b0b0'><path d='M7 10l5 5 5-5z'/></svg>");
+  }
+
+  .theme-select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+  }
+
+  .theme-select:hover {
+    border-color: var(--primary-color);
   }
 
   .theme-select option {
     background: var(--input-bg);
     color: var(--text-color);
-    padding: 0.5rem;
+    padding: 8px 12px;
   }
 
   .app-main {

@@ -267,7 +267,7 @@
   }
 
   .method-select {
-    padding: 0.75rem;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     background: var(--input-bg, #ffffff);
@@ -275,11 +275,34 @@
     font-weight: 500;
     min-width: 100px;
     cursor: pointer;
+    /* Custom styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666666'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 18px;
+  }
+
+  :global([data-theme="dark"]) .method-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b0b0b0'><path d='M7 10l5 5 5-5z'/></svg>");
+  }
+
+  .method-select:focus {
+    outline: 2px solid var(--primary-color, #007acc);
+    outline-offset: 2px;
+    border-color: var(--primary-color, #007acc);
+  }
+
+  .method-select:hover {
+    border-color: var(--primary-color, #007acc);
   }
 
   .method-select option {
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
+    padding: 8px 12px;
   }
 
   .url-input {
@@ -325,18 +348,41 @@
 
   .user-agent-select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: 8px;
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
     margin-bottom: 0.5rem;
     cursor: pointer;
+    /* Custom styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666666'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+  }
+
+  :global([data-theme="dark"]) .user-agent-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b0b0b0'><path d='M7 10l5 5 5-5z'/></svg>");
+  }
+
+  .user-agent-select:focus {
+    outline: 2px solid var(--primary-color, #007acc);
+    outline-offset: 2px;
+    border-color: var(--primary-color, #007acc);
+  }
+
+  .user-agent-select:hover {
+    border-color: var(--primary-color, #007acc);
   }
 
   .user-agent-select option {
     background: var(--input-bg, #ffffff);
     color: var(--text-color, #333333);
+    padding: 8px 12px;
   }
 
   .custom-user-agent-input {
