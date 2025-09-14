@@ -474,11 +474,20 @@
       
       // Create audio source from element like breakcorn
       const source = audioContext.createMediaElementSource(audioElement);
-      source.connect(audioContext.destination);
       
-      // Connect to Butterchurn like breakcorn.ru
+      // Initialize audio pipeline with compressor if available
+      let finalSource = source;
+      if (typeof window !== 'undefined' && window.initializeAudioPipeline) {
+        finalSource = window.initializeAudioPipeline(audioContext, source) || source;
+        console.log('Audio pipeline with compressor initialized');
+      } else {
+        // Fallback: direct connection
+        source.connect(audioContext.destination);
+      }
+      
+      // Connect to Butterchurn
       if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
-        window.connectButterchurnAudio(source);
+        window.connectButterchurnAudio(finalSource);
         console.log('Audio source connected to Butterchurn');
       }
     } catch (error) {

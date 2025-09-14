@@ -3,6 +3,7 @@
   import HttpClient from '../lib/tabs/HttpClient.svelte';
   import NetworkTools from '../lib/tabs/NetworkTools.svelte';
   import RadioPlayer from '../lib/tabs/RadioPlayer.svelte';
+  import SettingsModal from '../lib/components/SettingsModal.svelte';
   import butterchurn from 'butterchurn';
   import butterchurnPresets from 'butterchurn-presets';
 
@@ -17,6 +18,9 @@
   let audioSource: MediaElementAudioSourceNode | null = null;
   let isAudioConnected = $state(false);
   let isRendering = $state(false);
+  
+  // Settings modal
+  let settingsModal: SettingsModal;
 
   // Tab definitions
   const tabs = [
@@ -42,6 +46,10 @@
 
   function handleTabChange(tabId: string) {
     activeTab = tabId;
+  }
+  
+  function handleSettingsClick() {
+    settingsModal?.openModal();
   }
 
   // Theme management
@@ -275,7 +283,14 @@
       }
     });
     
-    // Setup global function for audio connection like breakcorn.ru
+    // Setup global functions for audio pipeline like breakcorn.ru
+    window.initializeAudioPipeline = (audioContext: AudioContext, source: MediaElementAudioSourceNode) => {
+      if (settingsModal) {
+        return settingsModal.initializeAudioPipeline(audioContext, source);
+      }
+      return source;
+    };
+    
     window.connectButterchurnAudio = (audioSourceNode: MediaElementAudioSourceNode | null) => {
       if (butterchurnVisualizer && audioSourceNode) {
         console.log('Connecting audio to Butterchurn visualizer');
@@ -319,7 +334,7 @@
     </div>
   </header>
 
-  <TabNavigation {tabs} {activeTab} onTabChange={handleTabChange} />
+  <TabNavigation {tabs} {activeTab} onTabChange={handleTabChange} onSettingsClick={handleSettingsClick} />
 
   <main class="app-main">
     {#if activeTab === 'http-client'}
@@ -335,6 +350,9 @@
     <p>Built with ❤️ using Tauri, SvelteKit, and Rust</p>
   </footer>
 </div>
+
+<!-- Settings Modal -->
+<SettingsModal bind:this={settingsModal} />
 
 <style>
   :global(:root) {

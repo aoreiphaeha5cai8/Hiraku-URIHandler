@@ -10,9 +10,10 @@
     tabs: Tab[];
     activeTab: string;
     onTabChange: (tabId: string) => void;
+    onSettingsClick?: () => void;
   }
 
-  let { tabs, activeTab, onTabChange }: Props = $props();
+  let { tabs, activeTab, onTabChange, onSettingsClick }: Props = $props();
 </script>
 
 <nav class="tab-navigation">
@@ -28,6 +29,17 @@
         <span class="tab-name">{tab.name}</span>
       </button>
     {/each}
+    
+    <div class="tab-spacer"></div>
+    
+    <button 
+      class="settings-button tab-button"
+      onclick={() => onSettingsClick?.()}
+      title="Audio Settings & Compressor"
+    >
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-name">Settings</span>
+    </button>
   </div>
 </nav>
 
@@ -92,6 +104,21 @@
 
   .tab-name {
     font-weight: 500;
+  }
+  
+  .tab-spacer {
+    flex: 1;
+  }
+  
+  .settings-button {
+    background: var(--secondary-bg) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  
+  .settings-button:hover {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
   }
 
   @media (max-width: 768px) {
