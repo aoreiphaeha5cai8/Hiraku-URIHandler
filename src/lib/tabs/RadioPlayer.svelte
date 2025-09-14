@@ -426,9 +426,9 @@
     analyser = null;
     audioDataArray = null;
     
-    // Notify parent about audio stop
-    if (typeof window !== 'undefined' && window.setAudioAnalyzer) {
-      window.setAudioAnalyzer(null, null);
+    // Disconnect from Butterchurn
+    if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
+      window.connectButterchurnAudio(null);
     }
     
     resetPlayerState();
@@ -469,22 +469,17 @@
     if (!audioElement || audioContext) return;
     
     try {
-      // Create audio context and analyser
+      // Create audio context like breakcorn.ru
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
       
-      // Create audio source from element
+      // Create audio source from element like breakcorn
       const source = audioContext.createMediaElementSource(audioElement);
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
+      source.connect(audioContext.destination);
       
-      // Create data array for frequency data
-      audioDataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      // Notify parent component about audio setup
-      if (typeof window !== 'undefined' && window.setAudioAnalyzer) {
-        window.setAudioAnalyzer(analyser, audioDataArray);
+      // Connect to Butterchurn like breakcorn.ru
+      if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
+        window.connectButterchurnAudio(source);
+        console.log('Audio source connected to Butterchurn');
       }
     } catch (error) {
       console.warn('Failed to setup audio analysis:', error);

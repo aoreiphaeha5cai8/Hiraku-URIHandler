@@ -10,13 +10,13 @@
   let activeTab = $state('http-client');
   let theme = $state<'light' | 'dark' | 'system' | 'butterchurn'>('system');
   
-  // Butterchurn state
+  // Butterchurn state (following breakcorn.ru pattern)
   let butterchurnCanvas: HTMLCanvasElement | null = null;
-  let butterchurnInstance: any = null;
+  let butterchurnVisualizer: any = null;
   let animationFrameId: number | null = null;
-  let audioAnalyser: AnalyserNode | null = null;
-  let audioDataArray: Uint8Array | null = null;
+  let audioSource: MediaElementAudioSourceNode | null = null;
   let isAudioConnected = $state(false);
+  let isRendering = $state(false);
 
   // Tab definitions
   const tabs = [
@@ -107,30 +107,36 @@
       
       console.log('WebGL context obtained, creating Butterchurn visualizer...');
       
-      // Initialize butterchurn
-      butterchurnInstance = butterchurn.createVisualizer(
-        gl,
-        butterchurnCanvas.width,
-        butterchurnCanvas.height,
-        {
-          meshWidth: 64,
-          meshHeight: 48,
-          fps: 60
-        }
-      );
+      // Create AudioContext like breakcorn
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       
-      console.log('Butterchurn visualizer created:', butterchurnInstance);
+      // Initialize butterchurn exactly like breakcorn.ru
+      butterchurnVisualizer = butterchurn.default.createVisualizer(audioCtx, butterchurnCanvas, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        pixelRatio: window.devicePixelRatio || 1,
+        textureRatio: 1
+      });
       
-      // Load a preset
-      const presets = butterchurnPresets.getPresets();
+      console.log('Butterchurn visualizer created');
+      
+      // Load presets like breakcorn
+      let presets = {};
+      if (window.butterchurnPresets) { 
+        Object.assign(presets, butterchurnPresets.getPresets()); 
+      }
+      
       const presetKeys = Object.keys(presets);
-      const randomPreset = presets[presetKeys[Math.floor(Math.random() * presetKeys.length)]];
-      console.log('Loading preset:', presetKeys[presetKeys.indexOf(Object.keys(randomPreset)[0])]);
-      butterchurnInstance.loadPreset(randomPreset, 0.0);
+      if (presetKeys.length > 0) {
+        const presetIndex = Math.floor(Math.random() * presetKeys.length);
+        const selectedPreset = presets[presetKeys[presetIndex]];
+        butterchurnVisualizer.loadPreset(selectedPreset, 0.0);
+        console.log('Loaded random preset:', presetKeys[presetIndex]);
+      }
       
-      // Start animation loop
-      startButterchurnAnimation();
-      console.log('Butterchurn animation started');
+      // Start rendering like breakcorn
+      startRenderer();
+      console.log('Butterchurn renderer started');
     } catch (error) {
       console.error('Failed to initialize Butterchurn:', error);
       // Fallback to vibrant static animated background
@@ -149,45 +155,31 @@
     }
   }
   
-  function startButterchurnAnimation() {
-    if (!butterchurnInstance) return;
+  // Render function exactly like breakcorn.ru
+  function startRenderer() {
+    if (!butterchurnVisualizer) {
+      console.warn('No Butterchurn visualizer, falling back to static animation');
+      startStaticAnimation();
+      return;
+    }
     
-    console.log('Starting Butterchurn animation');
+    isRendering = true;
+    console.log('Starting Butterchurn renderer');
     
-    const animate = () => {
-      if (theme !== 'butterchurn') return;
+    const render = () => {
+      if (theme !== 'butterchurn' || !isRendering) return;
       
       try {
-        let audioData: Uint8Array;
-        
-        if (isAudioConnected && audioAnalyser && audioDataArray) {
-          // Use real audio data from radio player
-          audioAnalyser.getByteFrequencyData(audioDataArray);
-          audioData = audioDataArray;
-          console.log('Using real audio data, avg level:', audioDataArray.reduce((a, b) => a + b) / audioDataArray.length);
-        } else {
-          // Generate more dynamic fake audio data as fallback
-          audioData = new Uint8Array(1024);
-          const time = Date.now() * 0.001;
-          for (let i = 0; i < 1024; i++) {
-            audioData[i] = 
-              Math.sin(time * 2 + i * 0.05) * 60 +
-              Math.sin(time * 0.5 + i * 0.02) * 40 +
-              Math.random() * 20 + 90;
-          }
-        }
-        
-        // Use same data for both time and frequency domain
-        butterchurnInstance.render(audioData, audioData);
-        animationFrameId = requestAnimationFrame(animate);
+        // Simple render call like breakcorn - Butterchurn handles audio internally
+        butterchurnVisualizer.render();
+        animationFrameId = requestAnimationFrame(render);
       } catch (error) {
         console.error('Butterchurn render error:', error);
-        // Fall back to static animation on error
         startStaticAnimation();
       }
     };
     
-    animate();
+    render();
   }
   
   function startStaticAnimation() {
@@ -229,24 +221,33 @@
   }
   
   function cleanupButterchurn() {
+    isRendering = false;
+    
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
     
-    if (butterchurnInstance) {
+    if (butterchurnVisualizer) {
       try {
-        butterchurnInstance.destroy();
+        // Butterchurn may not have a destroy method, but we'll try
+        if (butterchurnVisualizer.destroy) {
+          butterchurnVisualizer.destroy();
+        }
       } catch (e) {
-        console.warn('Error destroying Butterchurn instance:', e);
+        console.warn('Error destroying Butterchurn visualizer:', e);
       }
-      butterchurnInstance = null;
+      butterchurnVisualizer = null;
     }
     
     if (butterchurnCanvas) {
       butterchurnCanvas.remove();
       butterchurnCanvas = null;
     }
+    
+    audioSource = null;
+    isAudioConnected = false;
+    console.log('Butterchurn cleaned up');
   }
 
   // Apply theme on mount and when theme changes
@@ -262,21 +263,30 @@
       }
     });
     
-    // Handle window resize for Butterchurn
+    // Handle window resize for Butterchurn like breakcorn
     window.addEventListener('resize', () => {
-      if (theme === 'butterchurn' && butterchurnCanvas && butterchurnInstance) {
+      if (theme === 'butterchurn' && butterchurnCanvas && butterchurnVisualizer) {
         butterchurnCanvas.width = window.innerWidth;
         butterchurnCanvas.height = window.innerHeight;
-        butterchurnInstance.setRendererSize(window.innerWidth, window.innerHeight);
+        // Butterchurn automatically handles resize, but we can try setRendererSize if it exists
+        if (butterchurnVisualizer.setRendererSize) {
+          butterchurnVisualizer.setRendererSize(window.innerWidth, window.innerHeight);
+        }
       }
     });
     
-    // Setup global function for audio analyzer connection
-    window.setAudioAnalyzer = (analyser: AnalyserNode | null, dataArray: Uint8Array | null) => {
-      audioAnalyser = analyser;
-      audioDataArray = dataArray;
-      isAudioConnected = !!analyser;
-      console.log('Audio analyzer', analyser ? 'connected' : 'disconnected');
+    // Setup global function for audio connection like breakcorn.ru
+    window.connectButterchurnAudio = (audioSourceNode: MediaElementAudioSourceNode | null) => {
+      if (butterchurnVisualizer && audioSourceNode) {
+        console.log('Connecting audio to Butterchurn visualizer');
+        butterchurnVisualizer.connectAudio(audioSourceNode);
+        isAudioConnected = true;
+        audioSource = audioSourceNode;
+      } else {
+        console.log('Disconnecting audio from Butterchurn');
+        isAudioConnected = false;
+        audioSource = null;
+      }
     };
     
     // Cleanup on page unload
