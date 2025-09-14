@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
 
-  let url = $state("");
+  let url = $state("https://ifconfig.co");
   let method = $state("GET");
   let userAgent = $state("custom");
   let customUserAgent = $state("");
@@ -9,6 +9,9 @@
   let isLoading = $state(false);
   let statusCode = $state<number | null>(null);
   let headers = $state<Record<string, string>>({});
+  let customHeaders = $state<Array<{key: string, value: string}>>([{key: "", value: ""}]);
+  let theme = $state<"light" | "dark" | "system">("system");
+  let showHeaders = $state(false);
 
   const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
   
@@ -37,6 +40,45 @@
     }
     return userAgents[userAgent as keyof typeof userAgents]?.value || "";
   }
+  
+  function addHeader() {
+    customHeaders = [...customHeaders, {key: "", value: ""}];
+  }
+  
+  function removeHeader(index: number) {
+    if (customHeaders.length > 1) {
+      customHeaders = customHeaders.filter((_, i) => i !== index);
+    }
+  }
+  
+  function getCustomHeadersObject(): Record<string, string> {
+    const headersObj: Record<string, string> = {};
+    customHeaders.forEach(header => {
+      if (header.key.trim() && header.value.trim()) {
+        headersObj[header.key.trim()] = header.value.trim();
+      }
+    });
+    return headersObj;
+  }
+  
+  function applyTheme() {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark-theme");
+      root.classList.remove("light-theme");
+    } else if (theme === "light") {
+      root.classList.add("light-theme");
+      root.classList.remove("dark-theme");
+    } else {
+      // System theme
+      root.classList.remove("dark-theme", "light-theme");
+    }
+  }
+  
+  // Apply theme on change
+  $effect(() => {
+    applyTheme();
+  });
 
   async function makeRequest(event: Event) {
     event.preventDefault();
@@ -53,10 +95,12 @@
 
     try {
       const effectiveUserAgent = getEffectiveUserAgent();
+      const headersObj = getCustomHeadersObject();
       const result = await invoke("make_http_request", { 
         url: url.trim(), 
         method, 
-        userAgent: effectiveUserAgent || null 
+        userAgent: effectiveUserAgent || null,
+        customHeaders: Object.keys(headersObj).length > 0 ? headersObj : null
       });
       
       if (result && typeof result === 'object') {
@@ -85,7 +129,16 @@
 </script>
 
 <main class="container">
-  <h1>HTTP Client</h1>
+  <div class="header">
+    <h1>HTTP Client</h1>
+    <div class="theme-switcher">
+      <select bind:value={theme} class="theme-select">
+        <option value="system">🔄 System</option>
+        <option value="light">☀️ Light</option>
+        <option value="dark">🌙 Dark</option>
+      </select>
+    </div>
+  </div>
 
   <form class="request-form" onsubmit={makeRequest}>
     <div class="url-row">
@@ -96,7 +149,7 @@
       </select>
       <input 
         type="url" 
-        placeholder="Enter URL (e.g., https://api.github.com/users/octocat)" 
+        placeholder="Enter URL (e.g., https://ifconfig.co)" 
         bind:value={url} 
         class="url-input"
         required
@@ -127,6 +180,47 @@
           class="user-agent-preview"
           readonly
         />
+      {/if}
+    </div>
+    
+    <div class="headers-section">
+      <div class="headers-toggle">
+        <label>
+          <input type="checkbox" bind:checked={showHeaders} />
+          Custom Headers
+        </label>
+      </div>
+      
+      {#if showHeaders}
+        <div class="custom-headers">
+          {#each customHeaders as header, index}
+            <div class="header-row">
+              <input 
+                type="text" 
+                placeholder="Header name" 
+                bind:value={header.key} 
+                class="header-key-input"
+              />
+              <input 
+                type="text" 
+                placeholder="Header value" 
+                bind:value={header.value} 
+                class="header-value-input"
+              />
+              <button 
+                type="button" 
+                onclick={() => removeHeader(index)} 
+                class="remove-header-btn"
+                disabled={customHeaders.length === 1}
+              >
+                ❌
+              </button>
+            </div>
+          {/each}
+          <button type="button" onclick={addHeader} class="add-header-btn">
+            ➕ Add Header
+          </button>
+        </div>
       {/if}
     </div>
   </form>
@@ -176,10 +270,12 @@
   min-width: 100px;
   padding: 0.6em 1.2em;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  background-color: var(--select-bg);
+  color: var(--select-text);
   font-size: 1em;
   font-family: inherit;
+  cursor: pointer;
 }
 
 .url-input {
@@ -204,10 +300,12 @@
   min-width: 200px;
   padding: 0.6em 1.2em;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  background-color: var(--select-bg);
+  color: var(--select-text);
   font-size: 1em;
   font-family: inherit;
+  cursor: pointer;
 }
 
 .custom-user-agent-input,
@@ -216,26 +314,27 @@
   min-width: 200px;
   padding: 0.6em 1.2em;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
   font-size: 1em;
-  font-family: inherit;
   font-family: monospace;
   font-size: 0.9em;
 }
 
 .user-agent-preview {
-  background-color: #f8f8f8;
-  color: #666;
+  background-color: color-mix(in srgb, var(--input-bg) 70%, var(--bg-color) 30%);
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
   cursor: not-allowed;
 }
 
 .status-info {
   margin: 1rem 0;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
   border-radius: 8px;
   text-align: left;
+  border: 1px solid var(--border-color);
 }
 
 .status-code {
@@ -276,11 +375,12 @@
 }
 
 .headers-list {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color) 5%);
   padding: 1rem;
   border-radius: 4px;
   max-height: 200px;
   overflow-y: auto;
+  border: 1px solid var(--border-color);
 }
 
 .header-item {
@@ -290,12 +390,12 @@
 }
 
 .header-key {
-  color: #666;
+  color: color-mix(in srgb, var(--text-color) 70%, transparent 30%);
   margin-right: 0.5rem;
 }
 
 .header-value {
-  color: #333;
+  color: var(--text-color);
 }
 
 .response-section {
@@ -326,9 +426,19 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
+  
+  --bg-color: #f6f6f6;
+  --text-color: #0f0f0f;
+  --border-color: #ccc;
+  --input-bg: #ffffff;
+  --button-bg: #ffffff;
+  --button-hover: #396cd8;
+  --select-bg: #ffffff;
+  --select-text: #0f0f0f;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -337,13 +447,74 @@
   -webkit-text-size-adjust: 100%;
 }
 
+.light-theme {
+  --bg-color: #ffffff;
+  --text-color: #0f0f0f;
+  --border-color: #ddd;
+  --input-bg: #ffffff;
+  --button-bg: #ffffff;
+  --select-bg: #ffffff;
+  --select-text: #0f0f0f;
+}
+
+.dark-theme {
+  --bg-color: #1a1a1a;
+  --text-color: #f6f6f6;
+  --border-color: #555;
+  --input-bg: #2d2d2d;
+  --button-bg: #2d2d2d;
+  --select-bg: #2d2d2d;
+  --select-text: #f6f6f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-theme):not(.dark-theme) {
+    --bg-color: #1a1a1a;
+    --text-color: #f6f6f6;
+    --border-color: #555;
+    --input-bg: #2d2d2d;
+    --button-bg: #2d2d2d;
+    --select-bg: #2d2d2d;
+    --select-text: #f6f6f6;
+  }
+}
+
 .container {
-  margin: 0;
-  padding-top: 10vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  text-align: center;
+  align-items: center;
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.theme-switcher {
+  display: flex;
+  align-items: center;
+}
+
+.theme-select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--select-bg);
+  color: var(--select-text);
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 
@@ -370,15 +541,15 @@ h1 {
 input,
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-color);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+  background-color: var(--input-bg);
+  transition: border-color 0.25s, background-color 0.3s, color 0.3s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
 }
 
 button {
@@ -427,55 +598,6 @@ button {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button,
-  .method-select,
-  .user-agent-select {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-    border-color: #555;
-  }
-  
-  .user-agent-preview {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #aaa;
-  }
-  
-  button:active {
-    background-color: #0f0f0f69;
-  }
-  
-  .status-info {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-  
-  .headers-list {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-  
-  .header-key {
-    color: #aaa;
-  }
-  
-  .header-value {
-    color: #fff;
-  }
-  
-  .response-body {
-    background-color: #1e1e1e;
-    color: #f6f6f6;
-    border-color: #555;
-  }
-}
+/* Old dark theme styles removed - now using CSS custom properties */
 
 </style>

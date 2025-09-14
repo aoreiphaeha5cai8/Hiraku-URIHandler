@@ -1,10 +1,16 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 struct HttpResponse {
     status: u16,
-    headers: std::collections::HashMap<String, String>,
+    headers: HashMap<String, String>,
     body: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct RequestHeaders {
+    headers: HashMap<String, String>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -14,7 +20,12 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-async fn make_http_request(url: String, method: String, user_agent: Option<String>) -> Result<HttpResponse, String> {
+async fn make_http_request(
+    url: String, 
+    method: String, 
+    user_agent: Option<String>,
+    custom_headers: Option<HashMap<String, String>>
+) -> Result<HttpResponse, String> {
     let client = reqwest::Client::new();
     
     // Build request with optional User-Agent
@@ -32,6 +43,15 @@ async fn make_http_request(url: String, method: String, user_agent: Option<Strin
     if let Some(ua) = user_agent {
         if !ua.trim().is_empty() {
             request_builder = request_builder.header("User-Agent", ua);
+        }
+    }
+    
+    // Add custom headers if provided
+    if let Some(headers) = custom_headers {
+        for (key, value) in headers {
+            if !key.trim().is_empty() && !value.trim().is_empty() {
+                request_builder = request_builder.header(key, value);
+            }
         }
     }
     
