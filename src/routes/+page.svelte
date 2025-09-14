@@ -209,9 +209,34 @@
     dnsResult = [];
 
     try {
-      const result = await invoke("resolve_dns", { hostname: dnsHostname.trim() });
-      if (Array.isArray(result)) {
-        dnsResult = result;
+      // Check if Tauri is available
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        const result = await invoke("resolve_dns", { hostname: dnsHostname.trim() });
+        if (Array.isArray(result)) {
+          dnsResult = result;
+        }
+      } else {
+        // Fallback for frontend-only mode - simulate DNS resolution
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
+        
+        // Mock DNS resolution results
+        const hostname = dnsHostname.trim();
+        const mockResults = [
+          {
+            hostname,
+            ip_addresses: ['192.0.2.1', '192.0.2.2'], // Example IPs (RFC 3330)
+            record_type: 'A',
+            ttl: 300
+          },
+          {
+            hostname,
+            ip_addresses: ['2001:db8::1', '2001:db8::2'], // Example IPv6 (RFC 3849)
+            record_type: 'AAAA', 
+            ttl: 300
+          }
+        ];
+        
+        dnsResult = mockResults;
       }
     } catch (error) {
       console.error('DNS resolution error:', error);
@@ -298,9 +323,18 @@
     whoisResult = "";
 
     try {
-      const result = await invoke("whois_lookup", { domain: whoisDomain.trim() });
-      if (typeof result === 'string') {
-        whoisResult = result;
+      // Check if Tauri is available
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        const result = await invoke("whois_lookup", { domain: whoisDomain.trim() });
+        if (typeof result === 'string') {
+          whoisResult = result;
+        }
+      } else {
+        // Fallback for frontend-only mode
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+        
+        const domain = whoisDomain.trim();
+        whoisResult = `Domain Name: ${domain.toUpperCase()}\n\nThis is a demo WHOIS response for frontend-only mode.\n\nIn a real implementation with Tauri backend:\n- Registrar information\n- Registration dates\n- Name servers\n- Registrant contact info\n- Administrative contact\n- Technical contact\n\nNote: This is a demonstration. Real WHOIS data would require\nintegration with WHOIS servers or external APIs.\n\nDomain: ${domain}\nStatus: Active (Demo)\nCreated: 2023-01-01\nExpires: 2024-01-01\nRegistrar: Demo Registrar Inc.`;
       }
     } catch (error) {
       console.error('WHOIS lookup error:', error);
@@ -322,9 +356,50 @@
     geoResult = null;
 
     try {
-      const result = await invoke("geoip_lookup", { ip: geoIp.trim() });
-      if (result && typeof result === 'object') {
-        geoResult = result as {ip: string, country?: string, city?: string, region?: string, org?: string};
+      // Check if Tauri is available
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        const result = await invoke("geoip_lookup", { ip: geoIp.trim() });
+        if (result && typeof result === 'object') {
+          geoResult = result as {ip: string, country?: string, city?: string, region?: string, org?: string};
+        }
+      } else {
+        // Fallback for frontend-only mode
+        await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
+        
+        const ip = geoIp.trim();
+        
+        // Mock geolocation data based on common IPs or provide generic demo data
+        const mockGeoData = {
+          '8.8.8.8': {
+            ip,
+            country: 'United States',
+            city: 'Mountain View',
+            region: 'California',
+            org: 'Google LLC'
+          },
+          '1.1.1.1': {
+            ip,
+            country: 'United States', 
+            city: 'San Francisco',
+            region: 'California',
+            org: 'Cloudflare, Inc.'
+          },
+          '208.67.222.222': {
+            ip,
+            country: 'United States',
+            city: 'San Francisco', 
+            region: 'California',
+            org: 'OpenDNS'
+          }
+        };
+        
+        geoResult = mockGeoData[ip as keyof typeof mockGeoData] || {
+          ip,
+          country: 'Demo Country',
+          city: 'Demo City',
+          region: 'Demo Region',
+          org: 'Demo Organization (Frontend-only mode)'
+        };
       }
     } catch (error) {
       console.error('Geolocation lookup error:', error);
