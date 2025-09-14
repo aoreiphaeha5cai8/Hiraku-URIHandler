@@ -783,6 +783,10 @@
     cursor: pointer;
     transition: all 0.25s;
     text-align: left;
+    height: auto;
+    min-height: fit-content;
+    display: flex;
+    flex-direction: column;
   }
 
   .preset-button:hover:not(:disabled) {

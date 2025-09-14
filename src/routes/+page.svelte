@@ -3,10 +3,17 @@
   import HttpClient from '../lib/tabs/HttpClient.svelte';
   import NetworkTools from '../lib/tabs/NetworkTools.svelte';
   import RadioPlayer from '../lib/tabs/RadioPlayer.svelte';
+  import butterchurn from 'butterchurn';
+  import butterchurnPresets from 'butterchurn-presets';
 
   // Tab state
   let activeTab = $state('http-client');
-  let theme = $state<'light' | 'dark' | 'system'>('system');
+  let theme = $state<'light' | 'dark' | 'system' | 'butterchurn'>('system');
+  
+  // Butterchurn state
+  let butterchurnCanvas: HTMLCanvasElement | null = null;
+  let butterchurnInstance: any = null;
+  let animationFrameId: number | null = null;
 
   // Tab definitions
   const tabs = [
@@ -44,6 +51,146 @@
     } else {
       root.setAttribute('data-theme', theme);
     }
+    
+    // Initialize Butterchurn if selected
+    if (theme === 'butterchurn') {
+      setTimeout(() => initializeButterchurn(), 100);
+    } else {
+      cleanupButterchurn();
+    }
+  }
+  
+  function initializeButterchurn() {
+    try {
+      // Create canvas if it doesn't exist
+      if (!butterchurnCanvas) {
+        butterchurnCanvas = document.createElement('canvas');
+        butterchurnCanvas.style.position = 'fixed';
+        butterchurnCanvas.style.top = '0';
+        butterchurnCanvas.style.left = '0';
+        butterchurnCanvas.style.width = '100vw';
+        butterchurnCanvas.style.height = '100vh';
+        butterchurnCanvas.style.zIndex = '-1';
+        butterchurnCanvas.style.pointerEvents = 'none';
+        butterchurnCanvas.width = window.innerWidth;
+        butterchurnCanvas.height = window.innerHeight;
+        document.body.appendChild(butterchurnCanvas);
+      }
+      
+      // Create WebGL context
+      const gl = butterchurnCanvas.getContext('webgl2') || butterchurnCanvas.getContext('webgl');
+      
+      if (!gl) {
+        console.warn('WebGL not supported, falling back to static background');
+        // Create a static animated background instead
+        butterchurnCanvas.style.background = `
+          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.3) 0%, transparent 50%)
+        `;
+        startStaticAnimation();
+        return;
+      }
+      
+      // Initialize butterchurn with audio context
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      butterchurnInstance = butterchurn.createVisualizer(
+        gl,
+        butterchurnCanvas.width,
+        butterchurnCanvas.height,
+        {
+          meshWidth: 32,
+          meshHeight: 24,
+          fps: 30
+        }
+      );
+      
+      // Load a preset
+      const presets = butterchurnPresets.getPresets();
+      const presetKeys = Object.keys(presets);
+      const randomPreset = presets[presetKeys[Math.floor(Math.random() * presetKeys.length)]];
+      butterchurnInstance.loadPreset(randomPreset, 0.0);
+      
+      // Start animation loop
+      startButterchurnAnimation();
+    } catch (error) {
+      console.warn('Failed to initialize Butterchurn:', error);
+      // Fallback to static animated background
+      if (butterchurnCanvas) {
+        butterchurnCanvas.style.background = `
+          linear-gradient(45deg, rgba(120, 119, 198, 0.2) 0%, rgba(255, 119, 198, 0.2) 50%, rgba(120, 200, 255, 0.2) 100%)
+        `;
+        startStaticAnimation();
+      }
+    }
+  }
+  
+  function startButterchurnAnimation() {
+    if (!butterchurnInstance) return;
+    
+    const animate = () => {
+      if (theme !== 'butterchurn') return;
+      
+      try {
+        // Generate some fake audio data for visualization
+        const audioData = new Uint8Array(1024);
+        for (let i = 0; i < 1024; i++) {
+          audioData[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 128 + 128;
+        }
+        
+        butterchurnInstance.render(audioData, audioData);
+        animationFrameId = requestAnimationFrame(animate);
+      } catch (error) {
+        console.warn('Butterchurn render error:', error);
+      }
+    };
+    
+    animate();
+  }
+  
+  function startStaticAnimation() {
+    let hue = 0;
+    
+    const animate = () => {
+      if (theme !== 'butterchurn' || !butterchurnCanvas) return;
+      
+      hue = (hue + 0.5) % 360;
+      
+      butterchurnCanvas.style.background = `
+        radial-gradient(circle at ${50 + 30 * Math.sin(Date.now() * 0.001)}% ${50 + 20 * Math.cos(Date.now() * 0.0015)}%, 
+                       hsla(${hue}, 70%, 60%, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at ${50 + 20 * Math.cos(Date.now() * 0.002)}% ${50 + 30 * Math.sin(Date.now() * 0.0012)}%, 
+                       hsla(${(hue + 120) % 360}, 70%, 60%, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at ${50 + 25 * Math.sin(Date.now() * 0.0018)}% ${50 + 25 * Math.cos(Date.now() * 0.0008)}%, 
+                       hsla(${(hue + 240) % 360}, 70%, 60%, 0.3) 0%, transparent 50%)
+      `;
+      
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+  }
+  
+  function cleanupButterchurn() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    
+    if (butterchurnInstance) {
+      try {
+        butterchurnInstance.destroy();
+      } catch (e) {
+        console.warn('Error destroying Butterchurn instance:', e);
+      }
+      butterchurnInstance = null;
+    }
+    
+    if (butterchurnCanvas) {
+      butterchurnCanvas.remove();
+      butterchurnCanvas = null;
+    }
   }
 
   // Apply theme on mount and when theme changes
@@ -58,6 +205,18 @@
         applyTheme();
       }
     });
+    
+    // Handle window resize for Butterchurn
+    window.addEventListener('resize', () => {
+      if (theme === 'butterchurn' && butterchurnCanvas && butterchurnInstance) {
+        butterchurnCanvas.width = window.innerWidth;
+        butterchurnCanvas.height = window.innerHeight;
+        butterchurnInstance.setRendererSize(window.innerWidth, window.innerHeight);
+      }
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', cleanupButterchurn);
   }
 </script>
 
@@ -80,6 +239,7 @@
           <option value="system">🖥️ System</option>
           <option value="light">☀️ Light</option>
           <option value="dark">🌙 Dark</option>
+          <option value="butterchurn">🌈 Butterchurn</option>
         </select>
       </div>
     </div>
@@ -149,6 +309,31 @@
     --shadow: rgba(0, 0, 0, 0.3);
   }
 
+  :global([data-theme="butterchurn"]) {
+    /* Butterchurn glassmorphism theme */
+    --primary-color: #ffffff;
+    --primary-hover: rgba(255, 255, 255, 0.9);
+    --success-color: #00ff88;
+    --success-hover: rgba(0, 255, 136, 0.9);
+    --success-bg: rgba(0, 255, 136, 0.1);
+    --error-color: #ff4081;
+    --error-hover: rgba(255, 64, 129, 0.9);
+    --warning-color: #ffeb3b;
+    --info-bg: rgba(33, 150, 243, 0.1);
+    --text-color: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --bg-color: transparent;
+    --card-bg: rgba(255, 255, 255, 0.1);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --secondary-bg: rgba(255, 255, 255, 0.08);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --hover-bg: rgba(255, 255, 255, 0.15);
+    --code-bg: rgba(0, 0, 0, 0.3);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --glass-backdrop: blur(10px);
+    --glass-border: rgba(255, 255, 255, 0.18);
+  }
+
   :global(*) {
     box-sizing: border-box;
   }
@@ -161,6 +346,43 @@
     padding: 0;
     line-height: 1.6;
     transition: background-color 0.25s, color 0.25s;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  :global([data-theme="butterchurn"] *) {
+    backdrop-filter: var(--glass-backdrop, none);
+    -webkit-backdrop-filter: var(--glass-backdrop, none);
+  }
+
+  :global([data-theme="butterchurn"] .app-header),
+  :global([data-theme="butterchurn"] .app-main),
+  :global([data-theme="butterchurn"] .app-footer) {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow);
+  }
+
+  :global([data-theme="butterchurn"] input),
+  :global([data-theme="butterchurn"] select),
+  :global([data-theme="butterchurn"] button) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  :global([data-theme="butterchurn"] input:focus),
+  :global([data-theme="butterchurn"] select:focus),
+  :global([data-theme="butterchurn"] button:hover) {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
   }
 
   :global(h1, h2, h3, h4, h5, h6) {
@@ -179,6 +401,12 @@
   :global(textarea) {
     height: auto;
     min-height: 2.4rem;
+  }
+
+  /* Override height for preset buttons to allow adaptive height */
+  :global(.preset-button) {
+    height: auto !important;
+    min-height: fit-content !important;
   }
 
   :global(select) {
