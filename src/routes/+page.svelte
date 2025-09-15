@@ -84,9 +84,9 @@
       cleanupButterchurn();
     }
     
-    // Handle blur theme fallback animation
+    // Handle blur theme with dynamic blur animation
     if (theme === 'blur') {
-      setTimeout(() => startStaticAnimation(), 100);
+      setTimeout(() => startBlurAnimation(), 100);
     }
   }
   
@@ -138,8 +138,10 @@
       
       console.log('WebGL context obtained, creating Butterchurn visualizer...');
       
-      // Create AudioContext like breakcorn
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Create or reuse shared AudioContext like breakcorn
+      if (!sharedAudioContext) {
+        sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
       
       // Load butterchurn modules dynamically
       if (!butterchurnModule) {
@@ -155,7 +157,7 @@
       }
       
       // Initialize butterchurn exactly like breakcorn.ru
-      butterchurnVisualizer = butterchurnModule.default.createVisualizer(audioCtx, butterchurnCanvas, {
+      butterchurnVisualizer = butterchurnModule.default.createVisualizer(sharedAudioContext, butterchurnCanvas, {
         width: window.innerWidth,
         height: window.innerHeight,
         pixelRatio: window.devicePixelRatio || 1,
@@ -317,6 +319,103 @@
     audioSource = null;
     isAudioConnected = false;
     console.log('Butterchurn cleaned up');
+  }
+  
+  // Dynamic blur animation for Blur theme
+  function startBlurAnimation() {
+    let hue = 0;
+    let intensity = 1;
+    console.log('Starting dynamic blur animation');
+    
+    // Create background canvas for blur theme
+    let blurCanvas = document.getElementById('blur-canvas') as HTMLCanvasElement;
+    if (!blurCanvas) {
+      blurCanvas = document.createElement('canvas');
+      blurCanvas.id = 'blur-canvas';
+      blurCanvas.style.position = 'fixed';
+      blurCanvas.style.top = '0';
+      blurCanvas.style.left = '0';
+      blurCanvas.style.width = '100vw';
+      blurCanvas.style.height = '100vh';
+      blurCanvas.style.zIndex = '-1';
+      blurCanvas.style.pointerEvents = 'none';
+      blurCanvas.width = window.innerWidth;
+      blurCanvas.height = window.innerHeight;
+      document.body.appendChild(blurCanvas);
+    }
+    
+    const ctx = blurCanvas.getContext('2d');
+    if (!ctx) return;
+    
+    const animate = () => {
+      if (theme !== 'blur') {
+        // Clean up
+        if (blurCanvas) {
+          blurCanvas.remove();
+        }
+        return;
+      }
+      
+      hue = (hue + 1) % 360;
+      const time = Date.now() * 0.001;
+      
+      // Check for audio data
+      let audioIntensity = 1;
+      if (typeof window !== 'undefined' && window.audioAnalyser && window.audioDataArray) {
+        try {
+          window.audioAnalyser.getByteFrequencyData(window.audioDataArray);
+          const sum = window.audioDataArray.reduce((a: number, b: number) => a + b, 0);
+          audioIntensity = 1 + (sum / window.audioDataArray.length) / 128;
+        } catch (e) {
+          // Ignore audio analysis errors
+        }
+      }
+      
+      intensity = 0.8 + 0.4 * Math.sin(time * 2) + 0.2 * audioIntensity;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, blurCanvas.width, blurCanvas.height);
+      
+      // Create dynamic gradient with blur effect
+      const gradient = ctx.createRadialGradient(
+        blurCanvas.width * (0.5 + 0.3 * Math.sin(time * 0.5)),
+        blurCanvas.height * (0.5 + 0.3 * Math.cos(time * 0.7)),
+        0,
+        blurCanvas.width * 0.8,
+        blurCanvas.height * 0.8,
+        blurCanvas.width * 0.8
+      );
+      
+      gradient.addColorStop(0, `hsla(${hue}, 70%, 60%, ${0.3 * intensity})`);
+      gradient.addColorStop(0.3, `hsla(${(hue + 60) % 360}, 70%, 50%, ${0.2 * intensity})`);
+      gradient.addColorStop(0.6, `hsla(${(hue + 120) % 360}, 70%, 40%, ${0.1 * intensity})`);
+      gradient.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, blurCanvas.width, blurCanvas.height);
+      
+      // Add moving blur spots
+      for (let i = 0; i < 3; i++) {
+        const spotGradient = ctx.createRadialGradient(
+          blurCanvas.width * (0.2 + 0.6 * Math.sin(time * (0.3 + i * 0.2))),
+          blurCanvas.height * (0.2 + 0.6 * Math.cos(time * (0.5 + i * 0.15))),
+          0,
+          0,
+          0,
+          100 * intensity
+        );
+        
+        spotGradient.addColorStop(0, `hsla(${(hue + i * 80) % 360}, 80%, 70%, ${0.4 * intensity})`);
+        spotGradient.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+        
+        ctx.fillStyle = spotGradient;
+        ctx.fillRect(0, 0, blurCanvas.width, blurCanvas.height);
+      }
+      
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animate();
   }
   
   // Preset control functions like breakcorn.ru
@@ -510,7 +609,7 @@
 </div>
 
 <!-- Butterchurn Controls like breakcorn.ru -->
-{#if theme === 'butterchurn' && butterchurnVisualizer}
+{#if theme === 'butterchurn' && butterchurnVisualizer && presetKeys.length > 0}
   <div class="butterchurn-controls">
     <h3>🌈 Butterchurn Visualizer</h3>
     

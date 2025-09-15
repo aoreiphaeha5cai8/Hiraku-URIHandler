@@ -489,8 +489,16 @@
     if (!audioElement || audioContext || sourceNode) return;
     
     try {
-      // Create audio context like breakcorn.ru
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Check for shared AudioContext from Butterchurn first
+      const sharedContext = typeof window !== 'undefined' && window.getSharedAudioContext ? window.getSharedAudioContext() : null;
+      
+      if (sharedContext) {
+        console.log('Using shared AudioContext from Butterchurn');
+        audioContext = sharedContext;
+      } else {
+        // Create audio context like breakcorn.ru
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
       
       // Resume context if suspended (autoplay policy)
       if (audioContext.state === 'suspended') {
