@@ -1,12 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
-use std::io::Read;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
-use futures_util::StreamExt;
-use std::collections::HashMap as StdHashMap;
 
 #[derive(Serialize, Deserialize)]
 struct HttpResponse {
@@ -37,7 +34,7 @@ struct GeolocationResult {
     org: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct RadioStreamInfo {
     title: Option<String>,
     name: Option<String>,
