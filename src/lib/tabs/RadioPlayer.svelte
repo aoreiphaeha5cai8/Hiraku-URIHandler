@@ -1,18 +1,5 @@
 <script lang="ts">
-  let tauriAvailable = false;
-  let invoke: any = null;
-  let listen: any = null;
-  
-  // Dynamic import for Tauri APIs to handle both dev mode and Tauri context
-  if (typeof window !== 'undefined' && window.__TAURI__) {
-    tauriAvailable = true;
-    import("@tauri-apps/api/core").then(module => {
-      invoke = module.invoke;
-    });
-    import("@tauri-apps/api/event").then(module => {
-      listen = module.listen;
-    });
-  }
+  // Simple radio player without Tauri dependencies
   let radioUrl = $state("");
   let isPlaying = $state(false);
   let volume = $state(70);
@@ -22,8 +9,6 @@
   let audioContext: AudioContext | null = null;
   let analyser: AnalyserNode | null = null;
   let audioDataArray: Uint8Array | null = null;
-  let sourceNode: MediaElementAudioSourceNode | null = null;
-  let currentSourceIndex = $state(0);
   let currentRequestId = 0; // Track current request to cancel old ones
   let isRetrying = $state(false);
   let retryCount = $state(0);
@@ -31,7 +16,6 @@
   let lastAttemptedUrl = $state("");
   let consecutiveFailures = $state(0);
   let isBlocked = $state(false);
-  let autoSwitchInterval: number | null = null;
 
   const popularStreams = [
     // Original working streams
@@ -127,7 +111,7 @@
     }
   ];
 
-  async function playRadio(retryWithFallback: boolean = false, userInteraction: boolean = false) {
+  async function playRadio(retryWithFallback: boolean = false) {
     if (!radioUrl.trim()) {
       console.log("Radio Error: Please enter a radio stream URL");
       return;
@@ -137,86 +121,69 @@
     currentRequestId++;
     const requestId = currentRequestId;
     
-    // Clean up previous playback properly
-    cleanupAudio();
+    // Stop current playback first
+    if (audioElement) {
+      stopRadio();
+      await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
+    }
     
+    // Check if this request is still valid
+    if (requestId !== currentRequestId) {
+      console.log('Radio request cancelled (new request started)');
+      return;
+    }
+
     try {
       const url = await resolveStreamUrl(radioUrl.trim(), retryWithFallback);
       console.log('Attempting to play:', url);
       
-      // Check if this request is still valid after async operation
-      if (requestId !== currentRequestId) {
-        console.log('Radio request cancelled (new request started)');
-        return;
-      }
-      
-      // Create fresh audio element for each playback attempt
       audioElement = new Audio();
-      audioElement.crossOrigin = "anonymous";
-      audioElement.preload = "none";
       audioElement.volume = volume / 100;
-      console.log('Created new audio element, volume:', audioElement.volume);
+      audioElement.preload = "metadata";
+      audioElement.crossOrigin = "anonymous";
       
-      // Set up event listeners
-      setupAudioEventHandlers();
+      // Set up event listeners before setting src
       setupAudioEventListeners(retryWithFallback, requestId);
       
       // Set initial state
       currentStation = retryWithFallback ? "Trying fallback..." : "Connecting...";
       streamInfo = { title: "Loading...", format: getAudioFormat(url) };
       
-      // For user interactions, we need to play synchronously
-      if (userInteraction) {
-        // Set source and try to play immediately to satisfy autoplay policy
-        audioElement.src = url;
-        
-        try {
-          // This must be synchronous with user interaction
-          const playPromise = audioElement.play();
-          
-          if (playPromise !== undefined) {
-            // Handle the promise but don't await it here to keep synchronous
-            playPromise.then(() => {
-              if (requestId === currentRequestId) {
-                isPlaying = true;
-                console.log('Audio playback started successfully');
-              }
-            }).catch((error) => {
-              if (requestId === currentRequestId) {
-                handlePlayError(error, retryWithFallback, requestId);
-              }
-            });
-          } else {
-            isPlaying = true;
-          }
-        } catch (error) {
-          if (requestId === currentRequestId) {
-            handlePlayError(error, retryWithFallback, requestId);
-          }
+      // Set source and load
+      audioElement.src = url;
+      audioElement.load();
+      
+      // Add a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        if (audioElement && !isPlaying) {
+          handlePlayError(new Error('Connection timeout'));
         }
-      } else {
-        // For non-user interactions (like preset buttons), try normal flow
-        audioElement.src = url;
-        audioElement.load();
-        
-        // Add a timeout to prevent hanging
-        const timeoutId = setTimeout(() => {
-          if (audioElement && !isPlaying && requestId === currentRequestId) {
-            handlePlayError(new Error('Connection timeout'));
-          }
-        }, 10000);
-        
+      }, 10000); // 10 second timeout
+      
+      // Check if request is still valid before playing
+      if (requestId !== currentRequestId) {
+        clearTimeout(timeoutId);
+        console.log('Radio request cancelled before play');
+        return;
+      }
+      
+      // Try to play with proper error handling
+      const playPromise = audioElement.play();
+      
+      if (playPromise !== undefined) {
         try {
-          const playPromise = audioElement.play();
+          await playPromise;
           
-          if (playPromise !== undefined) {
-            await playPromise;
-            
-            if (requestId === currentRequestId) {
-              clearTimeout(timeoutId);
-              isPlaying = true;
-            }
+          // Check again after async operation
+          if (requestId !== currentRequestId) {
+            clearTimeout(timeoutId);
+            console.log('Radio request cancelled after play');
+            if (audioElement) audioElement.pause();
+            return;
           }
+          
+          clearTimeout(timeoutId);
+          isPlaying = true;
         } catch (error) {
           clearTimeout(timeoutId);
           if (requestId === currentRequestId) {
@@ -230,44 +197,6 @@
       if (requestId === currentRequestId) {
         handlePlayError(error, retryWithFallback, requestId);
       }
-    }
-  }
-  
-  function cleanupAudio() {
-    console.log('Cleaning up audio resources');
-    
-    // Stop and clean up audio element
-    if (audioElement) {
-      audioElement.pause();
-      audioElement.src = '';
-      audioElement.load(); // Reset the element
-    }
-    
-    // Clean up audio analysis
-    if (sourceNode) {
-      try {
-        sourceNode.disconnect();
-        console.log('Disconnected old audio source node');
-      } catch (e) {
-        console.warn('Error disconnecting source node:', e);
-      }
-      sourceNode = null;
-    }
-    
-    // Don't close the AudioContext as it may be shared with Butterchurn
-    // Just set analyser to null for cleanup
-    analyser = null;
-    audioDataArray = null;
-    
-    // Disconnect from Butterchurn
-    if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
-      window.connectButterchurnAudio(null);
-    }
-    
-    // Clear intervals
-    if (autoSwitchInterval) {
-      clearInterval(autoSwitchInterval);
-      autoSwitchInterval = null;
     }
   }
 
@@ -477,10 +406,16 @@
   function stopRadio() {
     console.log('Stopping radio playback');
     
-    // Increment request ID to cancel any pending operations
-    currentRequestId++;
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.src = "";
+    }
     
-    cleanupAudio();
+    // Disconnect from Butterchurn
+    if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
+      window.connectButterchurnAudio(null);
+    }
+    
     resetPlayerState();
   }
 
@@ -490,17 +425,129 @@
     }
   }
 
-  async function selectPreset(stream: { name: string, url: string, fallback?: string, format: string }) {
+  function handlePlayStopClick() {
+    if (isPlaying) {
+      stopRadio();
+    } else {
+      playRadioImmediately();
+    }
+  }
+  
+  function playRadioImmediately() {
+    if (!radioUrl.trim()) {
+      console.log("Radio Error: Please enter a radio stream URL");
+      return;
+    }
+    
+    // Create and play audio synchronously with user interaction
+    const audio = new Audio();
+    audio.crossOrigin = "anonymous";
+    audio.volume = volume / 100;
+    
+    // Set up basic event listeners
+    audio.addEventListener('canplay', () => {
+      console.log('Audio can play, setting up analysis');
+      setupAudioAnalysisForElement(audio);
+    });
+    
+    audio.addEventListener('play', () => {
+      isPlaying = true;
+      currentStation = getStationName(radioUrl);
+      audioElement = audio;
+      console.log('Audio started playing');
+    });
+    
+    audio.addEventListener('pause', () => {
+      isPlaying = false;
+      console.log('Audio paused');
+    });
+    
+    audio.addEventListener('ended', () => {
+      isPlaying = false;
+      resetPlayerState();
+      console.log('Audio ended');
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e.target?.error);
+      isPlaying = false;
+      resetPlayerState();
+    });
+    
+    // Set source and play immediately (synchronously)
+    audio.src = radioUrl;
+    
+    try {
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(error => {
+          console.error('Play failed:', error);
+          isPlaying = false;
+          resetPlayerState();
+        });
+      }
+      
+      // Update UI state immediately
+      audioElement = audio;
+      currentStation = "Connecting...";
+      streamInfo = { title: "Loading...", format: getAudioFormat(radioUrl) };
+      
+    } catch (error) {
+      console.error('Failed to start playback:', error);
+      isPlaying = false;
+      resetPlayerState();
+    }
+  }
+  
+  function setupAudioAnalysisForElement(audio: HTMLAudioElement) {
+    if (audioContext) {
+      // Clean up old context
+      audioContext = null;
+    }
+    
+    try {
+      // Create audio context
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Resume context if suspended
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      // Create audio source from element
+      const source = audioContext.createMediaElementSource(audio);
+      source.connect(audioContext.destination);
+      
+      // Initialize audio pipeline if available
+      let finalSource = source;
+      if (typeof window !== 'undefined' && window.initializeAudioPipeline) {
+        finalSource = window.initializeAudioPipeline(audioContext, source) || source;
+        console.log('Audio pipeline initialized');
+      }
+      
+      // Connect to Butterchurn
+      if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
+        window.connectButterchurnAudio(finalSource);
+        console.log('Audio connected to Butterchurn');
+      }
+    } catch (error) {
+      console.warn('Failed to setup audio analysis:', error);
+    }
+  }
+  
+  function handlePresetClick(stream: { name: string, url: string, fallback?: string, format: string }) {
     // Reset circuit breaker when user manually selects a new station
     consecutiveFailures = 0;
     isBlocked = false;
     
-    // Stop any current playback and cancel pending requests
+    // Stop any current playback
     stopRadio();
     
-    // Set new URL and play with user interaction flag
+    // Set new URL
     radioUrl = stream.url;
-    await playRadio(false, true);
+    
+    // Play immediately with user interaction
+    playRadioImmediately();
   }
 
   function getStationName(url: string): string {
@@ -516,26 +563,11 @@
   }
 
   function setupAudioAnalysis() {
-    // Don't create analysis if we already have it or no audio element
-    if (!audioElement || sourceNode) {
-      console.log('Skipping audio analysis setup - already exists or no audio element');
-      return;
-    }
+    if (!audioElement || audioContext) return;
     
     try {
-      // Check for shared AudioContext from Butterchurn first
-      const sharedContext = typeof window !== 'undefined' && window.getSharedAudioContext ? window.getSharedAudioContext() : null;
-      
-      if (sharedContext && sharedContext.state !== 'closed') {
-        console.log('Using shared AudioContext from Butterchurn');
-        audioContext = sharedContext;
-      } else {
-        // Create audio context if we don't have one
-        if (!audioContext) {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          console.log('Created new AudioContext for RadioPlayer');
-        }
-      }
+      // Create audio context like breakcorn.ru
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
       // Resume context if suspended (autoplay policy)
       if (audioContext.state === 'suspended') {
@@ -543,49 +575,24 @@
         audioContext.resume();
       }
       
-      // Create audio source from element - this can only be done once per audio element
-      sourceNode = audioContext.createMediaElementSource(audioElement);
-      console.log('Created MediaElementAudioSourceNode');
+      // Create audio source from element like breakcorn
+      const source = audioContext.createMediaElementSource(audioElement);
+      source.connect(audioContext.destination);
       
       // Initialize audio pipeline with compressor if available
-      let finalSource = sourceNode;
+      let finalSource = source;
       if (typeof window !== 'undefined' && window.initializeAudioPipeline) {
-        finalSource = window.initializeAudioPipeline(audioContext, sourceNode) || sourceNode;
+        finalSource = window.initializeAudioPipeline(audioContext, source) || source;
         console.log('Audio pipeline with compressor initialized');
-      } else {
-        // Fallback: direct connection
-        console.log('Using direct audio connection fallback');
-        sourceNode.connect(audioContext.destination);
       }
       
-      // Connect to Butterchurn
+      // Connect to Butterchurn like breakcorn.ru
       if (typeof window !== 'undefined' && window.connectButterchurnAudio) {
         window.connectButterchurnAudio(finalSource);
         console.log('Audio source connected to Butterchurn');
       }
-      
-      // Add error handlers for AudioContext
-      if (!audioContext.hasEventListener) {
-        audioContext.hasEventListener = true;
-        audioContext.addEventListener('statechange', () => {
-          console.log('AudioContext state changed to:', audioContext.state);
-          if (audioContext.state === 'interrupted' || audioContext.state === 'closed') {
-            console.warn('AudioContext was interrupted or closed');
-          }
-        });
-      }
-      
     } catch (error) {
-      console.error('Failed to setup audio analysis:', error);
-      // Clean up on error
-      if (sourceNode) {
-        try {
-          sourceNode.disconnect();
-        } catch (e) {
-          console.warn('Error disconnecting failed source node:', e);
-        }
-        sourceNode = null;
-      }
+      console.warn('Failed to setup audio analysis:', error);
     }
   }
   
@@ -674,11 +681,11 @@
             bind:value={radioUrl} 
             placeholder="Enter radio stream URL (e.g., http://stream.example.com:8000/live)" 
             class="radio-url-input"
-            onkeydown={async (e) => e.key === 'Enter' && await playRadio(false, true)}
+            onkeydown={(e) => e.key === 'Enter' && handlePlayStopClick()}
           />
         <!-- Single Play/Stop button like breakcorn.ru -->
         <button 
-          onclick={() => isPlaying ? stopRadio() : playRadio(false, true)} 
+          onclick={handlePlayStopClick} 
           disabled={!radioUrl.trim() || isRetrying || isBlocked} 
           class="play-stop-button"
           class:playing={isPlaying}
@@ -760,7 +767,7 @@
       <div class="stream-presets">
         {#each popularStreams as stream}
           <button 
-            onclick={async () => await selectPreset(stream)} 
+            onclick={() => handlePresetClick(stream)} 
             class="preset-button"
             disabled={isPlaying || isBlocked}
             class:blocked-preset={isBlocked}
@@ -801,13 +808,15 @@
           <ul>
             <li>Use the preset buttons to test popular stations</li>
             <li>Check your volume level before playing</li>
-            {#if !tauriAvailable}
-              <li><strong>Note:</strong> You're running in browser dev mode. For full functionality including CORS bypass, run the Tauri app with <code>pnpm tauri dev</code></li>
-            {/if}
-            <li>Some streams may have geographic restrictions or CORS issues in browser</li>
+            <li>Some streams may have geographic restrictions or require CORS support</li>
             <li>If a stream doesn't work, try a different URL</li>
-            <li>Browser autoplay policies may require user interaction first</li>
+            <li>Browser autoplay policies require the first click by a real user</li>
             <li>HTTPS streams work better in modern browsers</li>
+            {#if !userHasInteracted}
+              <li><strong>Status:</strong> Click any button above to enable audio playback</li>
+            {:else}
+              <li><strong>Status:</strong> Audio playback enabled ✓</li>
+            {/if}
           </ul>
         </div>
       </details>
