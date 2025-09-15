@@ -59,7 +59,9 @@
   ];
 
   function handleTabChange(tabId: string) {
+    console.log('Tab change requested:', tabId, 'current:', activeTab);
     activeTab = tabId;
+    console.log('Tab changed to:', activeTab);
   }
   
   function handleSettingsClick() {
@@ -594,12 +596,16 @@
   <TabNavigation {tabs} {activeTab} onTabChange={handleTabChange} onSettingsClick={handleSettingsClick} />
 
   <main class="app-main">
+    <!-- Debug: Current tab is {activeTab} -->
     {#if activeTab === 'http-client'}
       <HttpClient />
     {:else if activeTab === 'network-tools'}
       <NetworkTools />
     {:else if activeTab === 'radio-player'}
+      <div>Rendering RadioPlayer component...</div>
       <RadioPlayer />
+    {:else}
+      <div>Unknown tab: {activeTab}</div>
     {/if}
   </main>
 
