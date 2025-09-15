@@ -4,12 +4,25 @@
   import NetworkTools from '../lib/tabs/NetworkTools.svelte';
   import RadioPlayer from '../lib/tabs/RadioPlayer.svelte';
   import SettingsModal from '../lib/components/SettingsModal.svelte';
-  import butterchurn from 'butterchurn';
-  import butterchurnPresets from 'butterchurn-presets';
+  
+  // Dynamic imports for Butterchurn to avoid SSR issues
+  let butterchurnModule: any = null;
+  let butterchurnPresetsModule: any = null;
+  
+  // Butterchurn preset management like breakcorn.ru
+  let presets: any = {};
+  let presetKeys: string[] = [];
+  let presetIndex = $state(0);
+  let presetIndexHistory: number[] = [];
+  let presetCycle = $state(true);
+  let presetCycleLength = $state(15);
+  let presetRandom = $state(true);
+  let cycleInterval: number | null = null;
+  let defaultBlendTime = 5.7;
 
   // Tab state
   let activeTab = $state('http-client');
-  let theme = $state<'light' | 'dark' | 'system' | 'blur' | 'butterchurn'>('system');
+  let theme = $state<'light' | 'dark' | 'system' | 'plum' | 'blur' | 'butterchurn'>('system');
   
   // Butterchurn state (following breakcorn.ru pattern)
   let butterchurnCanvas: HTMLCanvasElement | null = null;
@@ -18,6 +31,7 @@
   let audioSource: MediaElementAudioSourceNode | null = null;
   let isAudioConnected = $state(false);
   let isRendering = $state(false);
+  let isInitializing = false;
   
   // Settings modal
   let settingsModal: SettingsModal;
@@ -65,13 +79,24 @@
     
     // Initialize Butterchurn if selected
     if (theme === 'butterchurn') {
-      setTimeout(() => initializeButterchurn(), 100);
+      setTimeout(async () => await initializeButterchurn(), 100);
     } else {
       cleanupButterchurn();
     }
+    
+    // Handle blur theme fallback animation
+    if (theme === 'blur') {
+      setTimeout(() => startStaticAnimation(), 100);
+    }
   }
   
-  function initializeButterchurn() {
+  async function initializeButterchurn() {
+    if (isInitializing || butterchurnVisualizer) {
+      console.log('Butterchurn already initializing or initialized, skipping...');
+      return;
+    }
+    
+    isInitializing = true;
     console.log('Initializing Butterchurn...');
     
     try {
@@ -116,8 +141,21 @@
       // Create AudioContext like breakcorn
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       
+      // Load butterchurn modules dynamically
+      if (!butterchurnModule) {
+        try {
+          butterchurnModule = await import('butterchurn');
+          butterchurnPresetsModule = await import('butterchurn-presets');
+          console.log('Butterchurn modules loaded successfully');
+        } catch (error) {
+          console.error('Failed to load Butterchurn modules:', error);
+          startStaticAnimation();
+          return;
+        }
+      }
+      
       // Initialize butterchurn exactly like breakcorn.ru
-      butterchurnVisualizer = butterchurn.default.createVisualizer(audioCtx, butterchurnCanvas, {
+      butterchurnVisualizer = butterchurnModule.default.createVisualizer(audioCtx, butterchurnCanvas, {
         width: window.innerWidth,
         height: window.innerHeight,
         pixelRatio: window.devicePixelRatio || 1,
@@ -127,17 +165,34 @@
       console.log('Butterchurn visualizer created');
       
       // Load presets like breakcorn
-      let presets = {};
-      if (window.butterchurnPresets) { 
-        Object.assign(presets, butterchurnPresets.getPresets()); 
+      presets = {};
+      if (butterchurnPresetsModule) {
+        // Try different export patterns
+        const presetsData = butterchurnPresetsModule.default?.getPresets?.() || 
+                           butterchurnPresetsModule.getPresets?.() || 
+                           butterchurnPresetsModule.default || 
+                           butterchurnPresetsModule;
+        
+        if (presetsData && typeof presetsData === 'object') {
+          Object.assign(presets, presetsData);
+          console.log('Butterchurn presets loaded:', Object.keys(presets).length);
+        } else {
+          console.warn('Could not load presets from module:', butterchurnPresetsModule);
+        }
       }
       
-      const presetKeys = Object.keys(presets);
+      presetKeys = Object.keys(presets);
       if (presetKeys.length > 0) {
-        const presetIndex = Math.floor(Math.random() * presetKeys.length);
+        presetIndex = Math.floor(Math.random() * presetKeys.length);
         const selectedPreset = presets[presetKeys[presetIndex]];
         butterchurnVisualizer.loadPreset(selectedPreset, 0.0);
+        presetIndexHistory.push(presetIndex);
         console.log('Loaded random preset:', presetKeys[presetIndex]);
+        
+        // Start cycle interval like breakcorn
+        if (presetCycle) {
+          startCycleInterval();
+        }
       }
       
       // Start rendering like breakcorn
@@ -158,6 +213,8 @@
         `;
         startStaticAnimation();
       }
+    } finally {
+      isInitializing = false;
     }
   }
   
@@ -234,6 +291,12 @@
       animationFrameId = null;
     }
     
+    // Stop cycle interval
+    if (cycleInterval) {
+      clearInterval(cycleInterval);
+      cycleInterval = null;
+    }
+    
     if (butterchurnVisualizer) {
       try {
         // Butterchurn may not have a destroy method, but we'll try
@@ -255,6 +318,83 @@
     isAudioConnected = false;
     console.log('Butterchurn cleaned up');
   }
+  
+  // Preset control functions like breakcorn.ru
+  function nextPreset(blendTime = defaultBlendTime) {
+    if (!butterchurnVisualizer || presetKeys.length === 0) return;
+    
+    presetIndexHistory.push(presetIndex);
+    const numPresets = presetKeys.length;
+    
+    if (presetRandom) {
+      presetIndex = Math.floor(Math.random() * numPresets);
+    } else {
+      presetIndex = (presetIndex + 1) % numPresets;
+    }
+    
+    const selectedPreset = presets[presetKeys[presetIndex]];
+    butterchurnVisualizer.loadPreset(selectedPreset, blendTime);
+    console.log('Next preset:', presetKeys[presetIndex]);
+  }
+  
+  function prevPreset(blendTime = defaultBlendTime) {
+    if (!butterchurnVisualizer || presetKeys.length === 0) return;
+    
+    const numPresets = presetKeys.length;
+    
+    if (presetIndexHistory.length > 0) {
+      presetIndex = presetIndexHistory.pop() || 0;
+    } else {
+      presetIndex = ((presetIndex - 1) + numPresets) % numPresets;
+    }
+    
+    const selectedPreset = presets[presetKeys[presetIndex]];
+    butterchurnVisualizer.loadPreset(selectedPreset, blendTime);
+    console.log('Previous preset:', presetKeys[presetIndex]);
+  }
+  
+  function selectPresetByIndex(index: number) {
+    if (!butterchurnVisualizer || presetKeys.length === 0 || index < 0 || index >= presetKeys.length) return;
+    
+    presetIndexHistory.push(presetIndex);
+    presetIndex = index;
+    
+    const selectedPreset = presets[presetKeys[presetIndex]];
+    butterchurnVisualizer.loadPreset(selectedPreset, 5.7);
+    console.log('Selected preset:', presetKeys[presetIndex]);
+  }
+  
+  function startCycleInterval() {
+    if (cycleInterval) {
+      clearInterval(cycleInterval);
+    }
+    
+    if (presetCycle && presetCycleLength > 0) {
+      cycleInterval = setInterval(() => {
+        nextPreset(2.7);
+      }, presetCycleLength * 1000);
+      console.log('Started preset cycle interval:', presetCycleLength, 'seconds');
+    }
+  }
+  
+  function stopCycleInterval() {
+    if (cycleInterval) {
+      clearInterval(cycleInterval);
+      cycleInterval = null;
+      console.log('Stopped preset cycle interval');
+    }
+  }
+  
+  // Watch for cycle settings changes
+  $effect(() => {
+    if (theme === 'butterchurn' && butterchurnVisualizer) {
+      if (presetCycle) {
+        startCycleInterval();
+      } else {
+        stopCycleInterval();
+      }
+    }
+  });
 
   // Apply theme on mount and when theme changes
   $effect(() => {
@@ -306,6 +446,22 @@
     
     // Cleanup on page unload
     window.addEventListener('beforeunload', cleanupButterchurn);
+    
+    // Keyboard controls like breakcorn.ru
+    window.addEventListener('keydown', (e) => {
+      if (theme !== 'butterchurn' || !butterchurnVisualizer) return;
+      
+      if (e.which === 32 || e.which === 39) { // Spacebar || ArrowRight
+        e.preventDefault();
+        nextPreset(5.7);
+      } else if (e.which === 8 || e.which === 37) { // Backspace || ArrowLeft
+        e.preventDefault();
+        prevPreset(0.0);
+      } else if (e.which === 72) { // KeyH
+        e.preventDefault();
+        nextPreset(0.0);
+      }
+    });
   }
 </script>
 
@@ -328,6 +484,7 @@
           <option value="system">🖥️ System</option>
           <option value="light">☀️ Light</option>
           <option value="dark">🌙 Dark</option>
+          <option value="plum">🍇 Plum</option>
           <option value="blur">✨ Blur</option>
           <option value="butterchurn">🌈 Butterchurn</option>
         </select>
@@ -351,6 +508,65 @@
     <p>Built with ❤️ using Tauri, SvelteKit, and Rust</p>
   </footer>
 </div>
+
+<!-- Butterchurn Controls like breakcorn.ru -->
+{#if theme === 'butterchurn' && butterchurnVisualizer}
+  <div class="butterchurn-controls">
+    <h3>🌈 Butterchurn Visualizer</h3>
+    
+    <div class="preset-nav">
+      <button onclick={() => prevPreset(0.0)} title="Previous preset (← or Backspace)">
+        ←
+      </button>
+      <button onclick={() => nextPreset(0.0)} title="Random preset (H)">
+        🎲
+      </button>
+      <button onclick={() => nextPreset(5.7)} title="Next preset (→ or Space)">
+        →
+      </button>
+    </div>
+    
+    <select 
+      class="preset-select" 
+      bind:value={presetIndex} 
+      onchange={(e) => selectPresetByIndex(parseInt(e.target.value))}
+    >
+      {#each presetKeys as key, i}
+        <option value={i}>
+          {key.length > 40 ? key.substring(0, 40) + '...' : key}
+        </option>
+      {/each}
+    </select>
+    
+    <div class="preset-controls">
+      <div class="preset-control-row">
+        <label>
+          <input type="checkbox" bind:checked={presetRandom} />
+          Random
+        </label>
+      </div>
+      
+      <div class="preset-control-row">
+        <label>
+          <input type="checkbox" bind:checked={presetCycle} />
+          Cycle
+        </label>
+      </div>
+      
+      <div class="preset-control-row">
+        <label>Length:</label>
+        <input 
+          type="number" 
+          bind:value={presetCycleLength} 
+          min="5" 
+          max="120" 
+          step="1"
+        />
+        <span style="font-size: 0.8rem; opacity: 0.8;">s</span>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Settings Modal -->
 <SettingsModal bind:this={settingsModal} />
@@ -402,8 +618,8 @@
     --shadow: rgba(0, 0, 0, 0.3);
   }
 
-  :global([data-theme="blur"]) {
-    /* Blur glassmorphism theme without Butterchurn */
+  :global([data-theme="plum"]) {
+    /* Plum glassmorphism theme with gradient background */
     --primary-color: #4fc3f7;
     --primary-hover: rgba(79, 195, 247, 0.9);
     --success-color: #00ff88;
@@ -430,8 +646,8 @@
     --glass-border: rgba(255, 255, 255, 0.2);
   }
 
-  :global([data-theme="butterchurn"]) {
-    /* Butterchurn theme - transparent background for clean canvas rendering */
+  :global([data-theme="blur"]) {
+    /* Simple blur theme - old butterchurn without visualization */
     --primary-color: #4fc3f7;
     --primary-hover: rgba(79, 195, 247, 0.9);
     --success-color: #00ff88;
@@ -455,6 +671,31 @@
     --glass-border: rgba(255, 255, 255, 0.2);
   }
 
+  :global([data-theme="butterchurn"]) {
+    /* Butterchurn theme exactly like breakcorn.ru */
+    --primary-color: #4fc3f7;
+    --primary-hover: rgba(79, 195, 247, 0.9);
+    --success-color: #00ff88;
+    --success-hover: rgba(0, 255, 136, 0.9);
+    --success-bg: rgba(0, 255, 136, 0.1);
+    --error-color: #ff4081;
+    --error-hover: rgba(255, 64, 129, 0.9);
+    --warning-color: #ffeb3b;
+    --info-bg: rgba(33, 150, 243, 0.1);
+    --text-color: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --bg-color: transparent;
+    --card-bg: rgba(0, 0, 0, 0.6);
+    --input-bg: rgba(0, 0, 0, 0.4);
+    --secondary-bg: rgba(0, 0, 0, 0.5);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --hover-bg: rgba(0, 0, 0, 0.7);
+    --code-bg: rgba(0, 0, 0, 0.7);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --glass-backdrop: blur(10px);
+    --glass-border: rgba(255, 255, 255, 0.15);
+  }
+
   :global(*) {
     box-sizing: border-box;
   }
@@ -471,17 +712,48 @@
     overflow-x: hidden;
   }
 
-  /* Blur theme styling */
-  :global([data-theme="blur"]) {
+  /* Plum theme styling */
+  :global([data-theme="plum"]) {
     background: var(--bg-color);
   }
 
+  :global([data-theme="plum"] .app-header),
+  :global([data-theme="plum"] .app-main),
+  :global([data-theme="plum"] .app-footer) {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow);
+  }
+
+  :global([data-theme="plum"] input),
+  :global([data-theme="plum"] select),
+  :global([data-theme="plum"] button) {
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  :global([data-theme="plum"] input:focus),
+  :global([data-theme="plum"] select:focus),
+  :global([data-theme="plum"] button:hover) {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+
+  /* Blur theme styling - simple glassmorphism */
   :global([data-theme="blur"] .app-header),
   :global([data-theme="blur"] .app-main),
   :global([data-theme="blur"] .app-footer) {
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
   }
@@ -490,8 +762,8 @@
   :global([data-theme="blur"] select),
   :global([data-theme="blur"] button) {
     background: rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     color: rgba(255, 255, 255, 0.95) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -506,7 +778,7 @@
     transform: translateY(-1px);
   }
 
-  /* Butterchurn theme - clean canvas rendering */
+  /* Butterchurn theme - exactly like breakcorn.ru */
   :global([data-theme="butterchurn"] #butterchurn-canvas) {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -514,16 +786,15 @@
     opacity: 1 !important;
     visibility: visible !important;
     z-index: -1 !important;
-    /* Remove any borders added for debugging */
     border: none !important;
   }
 
   :global([data-theme="butterchurn"] .app-header),
   :global([data-theme="butterchurn"] .app-main),
   :global([data-theme="butterchurn"] .app-footer) {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
   }
@@ -531,21 +802,111 @@
   :global([data-theme="butterchurn"] input),
   :global([data-theme="butterchurn"] select),
   :global([data-theme="butterchurn"] button) {
-    background: rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: rgba(255, 255, 255, 0.95) !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
   :global([data-theme="butterchurn"] input:focus),
   :global([data-theme="butterchurn"] select:focus),
   :global([data-theme="butterchurn"] button:hover) {
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     transform: translateY(-1px);
+  }
+
+  /* Butterchurn preset controls like breakcorn.ru */
+  :global([data-theme="butterchurn"] .butterchurn-controls) {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+
+  :global([data-theme="butterchurn"] .butterchurn-controls h3) {
+    margin: 0 0 15px 0;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  :global([data-theme="butterchurn"] .preset-nav) {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+  }
+
+  :global([data-theme="butterchurn"] .preset-nav button) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.25s;
+    min-width: 40px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global([data-theme="butterchurn"] .preset-nav button:hover) {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  :global([data-theme="butterchurn"] .preset-select) {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  :global([data-theme="butterchurn"] .preset-controls) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  :global([data-theme="butterchurn"] .preset-control-row) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  :global([data-theme="butterchurn"] .preset-control-row label) {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    min-width: 60px;
+  }
+
+  :global([data-theme="butterchurn"] .preset-control-row input[type="checkbox"]) {
+    width: 16px;
+    height: 16px;
+  }
+
+  :global([data-theme="butterchurn"] .preset-control-row input[type="number"]) {
+    width: 60px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
   }
 
   :global(h1, h2, h3, h4, h5, h6) {
