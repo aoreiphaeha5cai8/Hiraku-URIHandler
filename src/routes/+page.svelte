@@ -24,6 +24,11 @@
   let activeTab = $state('http-client');
   let theme = $state<'light' | 'dark' | 'system' | 'plum' | 'blur' | 'butterchurn'>('system');
   
+  // Audio context globals
+  let sharedAudioContext: AudioContext | null = null;
+  let audioAnalyser: AnalyserNode | null = null;
+  let audioDataArray: Uint8Array | null = null;
+  
   // Butterchurn state (following breakcorn.ru pattern)
   let butterchurnCanvas: HTMLCanvasElement | null = null;
   let butterchurnVisualizer: any = $state(null);
