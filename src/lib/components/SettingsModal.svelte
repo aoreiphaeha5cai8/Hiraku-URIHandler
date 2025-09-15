@@ -25,7 +25,9 @@
 </script>
 
 {#if isOpen}
-  <div class="modal-backdrop" onclick={handleBackdropClick}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div class="modal-backdrop" onclick={handleBackdropClick} role="dialog" aria-modal="true">
     <div class="modal-content">
       <div class="modal-header">
         <h2>⚙️ Audio Settings</h2>

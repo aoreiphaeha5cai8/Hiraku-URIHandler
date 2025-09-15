@@ -219,31 +219,31 @@
     <div class="compressor-dials">
       <div class="dial-group">
         <div id="dial_threshold"></div>
-        <label>Threshold</label>
+        <span class="dial-label">Threshold</span>
         <span class="dial-value">{threshold.toFixed(1)} dB</span>
       </div>
       
       <div class="dial-group">
         <div id="dial_knee"></div>
-        <label>Knee</label>
+        <span class="dial-label">Knee</span>
         <span class="dial-value">{knee.toFixed(1)}</span>
       </div>
       
       <div class="dial-group">
         <div id="dial_ratio"></div>
-        <label>Ratio</label>
+        <span class="dial-label">Ratio</span>
         <span class="dial-value">{ratio.toFixed(1)}:1</span>
       </div>
       
       <div class="dial-group">
         <div id="dial_attack"></div>
-        <label>Attack</label>
+        <span class="dial-label">Attack</span>
         <span class="dial-value">{attack.toFixed(3)} s</span>
       </div>
       
       <div class="dial-group">
         <div id="dial_release"></div>
-        <label>Release</label>
+        <span class="dial-label">Release</span>
         <span class="dial-value">{release.toFixed(3)} s</span>
       </div>
     </div>
@@ -396,10 +396,7 @@
     transform: translateY(-1px);
   }
   
-  .preset-button.active {
-    background: var(--primary-color);
-    color: white;
-  }
+  /* Removed unused .preset-button.active selector */
   
   @media (max-width: 768px) {
     .controls-grid {

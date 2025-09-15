@@ -653,8 +653,9 @@
       </div>
       
       <div class="preset-control-row">
-        <label>Length:</label>
+        <label for="cycle-length-input">Length:</label>
         <input 
+          id="cycle-length-input"
           type="number" 
           bind:value={presetCycleLength} 
           min="5" 
