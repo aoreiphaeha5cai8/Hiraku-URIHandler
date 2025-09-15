@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Issue Demonstration</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .tab { padding: 10px 20px; margin: 5px; cursor: pointer; background: #f0f0f0; border: none; }
+        .tab.active { background: #007acc; color: white; }
+        .content { padding: 20px; margin: 20px 0; border: 1px solid #ccc; min-height: 100px; }
+        .debug { background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Tab Issue Reproduction</h1>
+    
+    <p>This demonstrates the exact issue we found in the Svelte app:</p>
+    <ul>
+        <li>✅ Tab highlighting works correctly</li>
+        <li>❌ Content switching is broken</li>
+        <li>State updates but UI doesn't re-render</li>
+    </ul>
+    
+    <div class="debug">
+        <strong>Current Active Tab:</strong> <span id="debug-tab">http-client</span>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div id="tab-nav">
+        <button class="tab active" data-tab="http-client">🌐 HTTP Client</button>
+        <button class="tab" data-tab="network-tools">🔧 Network Tools</button>
+        <button class="tab" data-tab="radio-player">📻 Radio Player</button>
+    </div>
+    
+    <!-- Tab Content -->
+    <div class="content" id="content">
+        <div id="http-client" style="display: block;">
+            <h2>HTTP Client</h2>
+            <p>Make HTTP requests with custom headers and User-Agent</p>
+            <input type="url" placeholder="Enter URL" style="width: 300px; padding: 8px;">
+            <button style="padding: 8px 16px; background: #007acc; color: white; border: none;">Send</button>
+        </div>
+        
+        <div id="network-tools" style="display: none;">
+            <h2>Network Tools</h2>
+            <p>DNS resolution, WHOIS lookup, IP geolocation</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>🔍 DNS Resolution</h3>
+                    <input type="text" placeholder="Enter hostname">
+                    <button>Resolve</button>
+                </div>
+                <div>
+                    <h3>📝 WHOIS Lookup</h3>
+                    <input type="text" placeholder="Enter domain">
+                    <button>Lookup</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="radio-player" style="display: none;">
+            <h2>Radio Player</h2>
+            <p>Stream internet radio stations</p>
+            <div>
+                <select style="width: 300px; padding: 8px;">
+                    <option>🎵 Lofi Hip Hop</option>
+                    <option>🎶 SomaFM Groove Salad</option>
+                    <option>🎧 Calm Radio Jazz</option>
+                </select>
+                <button style="padding: 8px 16px; background: #28a745; color: white; border: none;">Play</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="debug">
+        <h3>Issue Simulation</h3>
+        <p>Click the buttons below to simulate the Svelte bug:</p>
+        <button onclick="simulateSvelteBug()">🐛 Simulate Svelte Bug</button>
+        <button onclick="fixContent()">✅ Fix Content</button>
+        <p id="bug-status">Status: Normal operation</p>
+    </div>
+    
+    <script>
+        let activeTab = 'http-client';
+        let contentBroken = false;
+        
+        // Normal tab switching (what should happen)
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const newTab = e.target.dataset.tab;
+                console.log('Tab change requested:', newTab, 'current:', activeTab);
+                
+                // Update state
+                activeTab = newTab;
+                console.log('Tab changed to:', activeTab);
+                
+                // Update debug display
+                document.getElementById('debug-tab').textContent = activeTab;
+                
+                // Update tab highlighting
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update content (this part breaks in Svelte)
+                if (!contentBroken) {
+                    updateContent(newTab);
+                }
+            });
+        });
+        
+        function updateContent(tabId) {
+            // Hide all content
+            document.querySelectorAll('[id^="http-"], [id^="network-"], [id^="radio-"]').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Show selected content
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.style.display = 'block';
+            }
+        }
+        
+        function simulateSvelteBug() {
+            contentBroken = true;
+            document.getElementById('bug-status').innerHTML = 
+                '<strong style="color: red;">🐛 BUG ACTIVE: Tab state updates but content doesn\'t change!</strong><br>' +
+                'This is exactly what happens in the Svelte app. Try clicking tabs now.';
+        }
+        
+        function fixContent() {
+            contentBroken = false;
+            updateContent(activeTab);
+            document.getElementById('bug-status').innerHTML = 
+                '<strong style="color: green;">✅ FIXED: Content switching restored!</strong>';
+        }
+        
+        // Show initial console logs
+        console.log('Tab demo loaded. Current tab:', activeTab);
+        console.log('This demonstrates the Svelte runes reactivity issue.');
+    </script>
+</body>
+</html>
