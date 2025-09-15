@@ -123,9 +123,11 @@
     currentRequestId++;
     const requestId = currentRequestId;
     
-    // Stop current playback first
+    // Stop current playback first but preserve audio element
     if (audioElement) {
-      stopRadio();
+      console.log('Stopping current playback');
+      audioElement.pause();
+      audioElement.src = ''; // Clear source
       await new Promise(resolve => setTimeout(resolve, 200)); // Small delay
     }
     
@@ -139,10 +141,16 @@
       const url = await resolveStreamUrl(radioUrl.trim(), retryWithFallback);
       console.log('Attempting to play:', url);
       
-      audioElement = new Audio();
+      // Reuse audio element or create new one
+      if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.crossOrigin = "anonymous";
+        audioElement.preload = "none"; // Don't preload to avoid buffering issues
+        setupAudioEventHandlers();
+      }
+      
       audioElement.volume = volume / 100;
-      audioElement.preload = "metadata";
-      audioElement.crossOrigin = "anonymous";
+      console.log('Audio element volume set to:', audioElement.volume);
       
       // Set up event listeners before setting src
       setupAudioEventListeners(retryWithFallback, requestId);
@@ -406,13 +414,14 @@
   }
 
   function stopRadio() {
-    // Stop playback
+    console.log('Stopping radio playback');
+    
+    // Stop playback but keep audio element
     if (audioElement) {
       try {
         audioElement.pause();
         audioElement.src = ""; // Clear source for streaming
-        audioElement.load(); // Reset the audio element
-        audioElement = null;
+        console.log('Audio stopped and source cleared');
       } catch (e) {
         console.warn('Error stopping audio:', e);
       }
@@ -492,21 +501,24 @@
       // Check for shared AudioContext from Butterchurn first
       const sharedContext = typeof window !== 'undefined' && window.getSharedAudioContext ? window.getSharedAudioContext() : null;
       
-      if (sharedContext) {
+      if (sharedContext && sharedContext.state !== 'closed') {
         console.log('Using shared AudioContext from Butterchurn');
         audioContext = sharedContext;
       } else {
         // Create audio context like breakcorn.ru
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('Created new AudioContext for RadioPlayer');
       }
       
       // Resume context if suspended (autoplay policy)
       if (audioContext.state === 'suspended') {
+        console.log('Resuming suspended AudioContext');
         audioContext.resume();
       }
       
       // Create audio source from element like breakcorn
       sourceNode = audioContext.createMediaElementSource(audioElement);
+      console.log('Created MediaElementAudioSourceNode');
       
       // Initialize audio pipeline with compressor if available
       let finalSource = sourceNode;
@@ -515,6 +527,7 @@
         console.log('Audio pipeline with compressor initialized');
       } else {
         // Fallback: direct connection
+        console.log('Using direct audio connection fallback');
         sourceNode.connect(audioContext.destination);
       }
       
@@ -523,8 +536,24 @@
         window.connectButterchurnAudio(finalSource);
         console.log('Audio source connected to Butterchurn');
       }
+      
+      // Add error handlers for AudioContext
+      audioContext.addEventListener('statechange', () => {
+        console.log('AudioContext state changed to:', audioContext.state);
+        if (audioContext.state === 'interrupted' || audioContext.state === 'closed') {
+          console.warn('AudioContext was interrupted or closed');
+        }
+      });
+      
     } catch (error) {
-      console.warn('Failed to setup audio analysis:', error);
+      console.error('Failed to setup audio analysis:', error);
+      // Clean up on error
+      if (sourceNode) {
+        sourceNode = null;
+      }
+      if (audioContext && audioContext !== sharedContext) {
+        audioContext = null;
+      }
     }
   }
   
@@ -541,6 +570,59 @@
 
 
   // Update volume when slider changes
+  // Audio event handlers
+  function setupAudioEventHandlers() {
+    if (!audioElement) return;
+    
+    audioElement.addEventListener('play', () => {
+      console.log('Audio: play event');
+      isPlaying = true;
+    });
+    
+    audioElement.addEventListener('pause', () => {
+      console.log('Audio: pause event');
+      if (!isRetrying) {
+        isPlaying = false;
+      }
+    });
+    
+    audioElement.addEventListener('ended', () => {
+      console.log('Audio: ended event - stream ended');
+      isPlaying = false;
+    });
+    
+    audioElement.addEventListener('error', (e) => {
+      console.error('Audio: error event', audioElement?.error);
+      isPlaying = false;
+    });
+    
+    audioElement.addEventListener('loadstart', () => {
+      console.log('Audio: loadstart - started loading');
+    });
+    
+    audioElement.addEventListener('canplay', () => {
+      console.log('Audio: canplay - can start playing');
+      retryCount = 0;
+      consecutiveFailures = 0;
+    });
+    
+    audioElement.addEventListener('stalled', () => {
+      console.warn('Audio: stalled - data stopped loading');
+    });
+    
+    audioElement.addEventListener('suspend', () => {
+      console.warn('Audio: suspend - loading suspended by user agent');
+    });
+    
+    audioElement.addEventListener('abort', () => {
+      console.warn('Audio: abort - loading aborted');
+    });
+    
+    audioElement.addEventListener('waiting', () => {
+      console.log('Audio: waiting - buffering more data');
+    });
+  }
+
   $effect(() => {
     updateVolume();
   });

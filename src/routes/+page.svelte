@@ -11,7 +11,7 @@
   
   // Butterchurn preset management like breakcorn.ru
   let presets: any = {};
-  let presetKeys: string[] = [];
+  let presetKeys: string[] = $state([]);
   let presetIndex = $state(0);
   let presetIndexHistory: number[] = [];
   let presetCycle = $state(true);
@@ -26,7 +26,7 @@
   
   // Butterchurn state (following breakcorn.ru pattern)
   let butterchurnCanvas: HTMLCanvasElement | null = null;
-  let butterchurnVisualizer: any = null;
+  let butterchurnVisualizer: any = $state(null);
   let animationFrameId: number | null = null;
   let audioSource: MediaElementAudioSourceNode | null = null;
   let isAudioConnected = $state(false);

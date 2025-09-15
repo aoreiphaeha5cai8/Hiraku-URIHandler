@@ -1,7 +1,7 @@
 <script lang="ts">
   import AudioSettings from './AudioSettings.svelte';
   
-  let audioSettingsRef: AudioSettings;
+  let audioSettingsRef: AudioSettings = $state();
   let isOpen = $state(false);
   
   export function openModal() {
@@ -42,10 +42,10 @@
         <div class="butterchurn-info">
           <h3>🌈 Butterchurn Visualizer</h3>
           <p>
-            <a href="#" onclick={() => window.open('https://github.com/jberg/butterchurn', '_blank')}>
+            <a href="https://github.com/jberg/butterchurn" target="_blank" rel="noopener noreferrer">
               Butterchurn
             </a> is a WebGL implementation of the 
-            <a href="#" onclick={() => window.open('https://www.geisswerks.com/milkdrop/', '_blank')}>
+            <a href="https://www.geisswerks.com/milkdrop/" target="_blank" rel="noopener noreferrer">
               Milkdrop Visualizer
             </a>.
             Licensed under the MIT License.
