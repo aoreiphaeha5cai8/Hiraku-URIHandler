@@ -430,14 +430,18 @@
   }
 
   function handlePlayStopClick() {
+    console.log('🎵 handlePlayStopClick called, isPlaying:', isPlaying);
+    userHasInteracted = true; // Ensure user interaction tracking
+    
     if (isPlaying) {
       stopRadio();
     } else {
-      playRadioImmediately();
+      playRadioWithUserInteraction();
     }
   }
   
-  function playRadioImmediately() {
+  function playRadioWithUserInteraction() {
+    console.log('🎵 playRadioWithUserInteraction called');
     userHasInteracted = true; // Track user interaction
     
     if (!radioUrl.trim()) {
@@ -500,9 +504,61 @@
       
     } catch (error) {
       console.error('Failed to start playback:', error);
+      handleAudioPlayError(error);
       isPlaying = false;
       resetPlayerState();
     }
+  }
+  
+  function setupAudioEventListenersForElement(audio: HTMLAudioElement) {
+    audio.addEventListener('loadstart', () => {
+      console.log('Audio: load started');
+      currentStation = "Loading...";
+    });
+    
+    audio.addEventListener('canplay', () => {
+      console.log('Audio: can play, setting up analysis');
+      setupAudioAnalysisForElement(audio);
+      currentStation = getStationName(radioUrl) || "Live Stream";
+      streamInfo = {
+        title: "Live Stream",
+        format: getAudioFormat(radioUrl),
+        bitrate: "Unknown"
+      };
+    });
+    
+    audio.addEventListener('play', () => {
+      console.log('Audio: play event');
+      isPlaying = true;
+    });
+    
+    audio.addEventListener('pause', () => {
+      console.log('Audio: pause event');
+      if (!audio.ended) {
+        isPlaying = false;
+      }
+    });
+    
+    audio.addEventListener('ended', () => {
+      console.log('Audio: ended event');
+      isPlaying = false;
+      resetPlayerState();
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio: error event', e.target?.error);
+      handleAudioPlayError(e.target?.error);
+    });
+    
+    audio.addEventListener('stalled', () => {
+      console.warn('Audio: stream stalled');
+      currentStation = "Buffering...";
+    });
+    
+    audio.addEventListener('waiting', () => {
+      console.log('Audio: waiting for data');
+      currentStation = "Buffering...";
+    });
   }
   
   function setupAudioAnalysisForElement(audio: HTMLAudioElement) {
@@ -542,18 +598,24 @@
   }
   
   function handlePresetClick(stream: { name: string, url: string, fallback?: string, format: string }) {
+    userHasInteracted = true; // Ensure user interaction is tracked
+    
     // Reset circuit breaker when user manually selects a new station
     consecutiveFailures = 0;
     isBlocked = false;
     
-    // Stop any current playback
-    stopRadio();
+    // Stop any current playback properly
+    if (audioElement) {
+      stopRadio();
+    }
     
-    // Set new URL
+    // Set new URL and station info immediately
     radioUrl = stream.url;
+    currentStation = "Connecting...";
+    streamInfo = { title: "Loading...", format: stream.format };
     
-    // Play immediately with user interaction
-    playRadioImmediately();
+    // Play immediately with proper user interaction handling
+    playRadioWithUserInteraction();
   }
 
   function getStationName(url: string): string {
@@ -599,6 +661,31 @@
       }
     } catch (error) {
       console.warn('Failed to setup audio analysis:', error);
+    }
+  }
+  
+  function handleAudioPlayError(error: any) {
+    console.error('Audio play error:', error);
+    isPlaying = false;
+    
+    if (error?.name === 'NotAllowedError') {
+      currentStation = "⚠️ Click Play to start";
+      streamInfo = { 
+        title: "User interaction required", 
+        format: "Browser Policy" 
+      };
+    } else if (error?.name === 'NotSupportedError') {
+      currentStation = "❌ Format not supported";
+      streamInfo = { 
+        title: "Try a different stream", 
+        format: "Unsupported" 
+      };
+    } else {
+      currentStation = "❌ Stream error";
+      streamInfo = { 
+        title: error?.message || "Connection failed", 
+        format: "Error" 
+      };
     }
   }
   
@@ -776,8 +863,9 @@
           <button 
             onclick={() => handlePresetClick(stream)} 
             class="preset-button"
-            disabled={isPlaying || isBlocked}
+            disabled={isBlocked}
             class:blocked-preset={isBlocked}
+            class:current-station={stream.url === radioUrl && isPlaying}
           >
             <div class="preset-header">
               <span class="preset-name">{stream.name}</span>
@@ -1106,6 +1194,16 @@
   .preset-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+  
+  .preset-button.current-station {
+    border-color: var(--success-color, #28a745);
+    background: color-mix(in srgb, var(--success-color, #28a745) 10%, var(--secondary-bg, #f5f5f5));
+  }
+  
+  .preset-button.current-station .preset-name {
+    color: var(--success-color, #28a745);
+    font-weight: 600;
   }
 
   .preset-header {
