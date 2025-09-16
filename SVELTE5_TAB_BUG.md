@@ -1,21 +1,21 @@
 # Svelte 5 Tab Switching Bug Report
 
-## ✅ Проблема РЕШЕНА
+## ✅ PROBLEM COMPLETELY RESOLVED
 
-~~В приложении был критический баг с переключением табов в Svelte 5. Conditional rendering не работал корректно с runes (`$state`).~~
+~~There was a critical bug with tab switching in Svelte 5. Conditional rendering didn't work correctly with runes (`$state`).~~
 
-**Проблема решена** с помощью CSS-based подхода для переключения видимости табов.
+**Problem completely solved** using a CSS-based approach for tab visibility switching.
 
-## Симптомы
+## Original Symptoms (Now Fixed)
 
-1. ✅ Кнопки табов правильно подсвечиваются (активная кнопка меняется)
-2. ✅ State переменная `activeTab` корректно обновляется
-3. ❌ Содержимое табов НЕ переключается - все компоненты остаются в DOM
-4. ❌ После первого клика по любой кнопке табы перестают работать
+1. ✅ Tab buttons highlighted correctly (active button changes)
+2. ✅ State variable `activeTab` updated correctly
+3. ❌ Tab content NOT switching - all components remained in DOM
+4. ❌ After first click on any button tabs stopped working
 
-## Проверенные решения
+## Attempted Solutions (Before Final Fix)
 
-### ❌ Простые условные блоки
+### ❌ Simple Conditional Blocks
 ```svelte
 {#if activeTab === 'http-client'}
   <HttpClient />
@@ -23,9 +23,9 @@
   <NetworkTools />
 {/if}
 ```
-**Результат**: Не работает
+**Result**: Didn't work
 
-### ❌ Key блоки  
+### ❌ Key Blocks  
 ```svelte
 {#key activeTab}
   {#if activeTab === 'http-client'}
@@ -33,21 +33,21 @@
   {/if}
 {/key}
 ```
-**Результат**: Не работает
+**Result**: Didn't work
 
-### ❌ Счетчик + производная переменная
+### ❌ Counter + Derived Variable
 ```svelte
 let tabChangeCounter = $state(0);
 let currentTab = $derived(`${activeTab}-${tabChangeCounter}`);
 
 function handleTabChange(tabId) {
   activeTab = tabId;
-  tabChangeCounter++; // Принудительная реактивность
+  tabChangeCounter++; // Force reactivity
 }
 ```
-**Результат**: Не работает
+**Result**: Didn't work
 
-### ❌ Key с атрибутами
+### ❌ Key with Attributes
 ```svelte
 {#key activeTab}
   {#if activeTab === 'http-client'}
@@ -55,46 +55,46 @@ function handleTabChange(tabId) {
   {/if}
 {/key}
 ```
-**Результат**: Не работает
+**Result**: Didn't work
 
-## Текущее временное решение
+## Previous Temporary Solution
 
-Используется `{#key}` блок как наименее плохой workaround, но проблема полностью не решена.
+Used `{#key}` block as the least problematic workaround, but the issue wasn't fully resolved.
 
-## Воспроизведение
+## Reproduction Steps (Historical)
 
-1. Запустить приложение
-2. Кликнуть на любой таб кроме "HTTP Client"
-3. Наблюдать что:
-   - Кнопка подсвечивается правильно
-   - Содержимое предыдущего таба остается в DOM
-   - Содержимое нового таба добавляется к предыдущему
+1. Start the application
+2. Click on any tab other than "HTTP Client"
+3. Observe that:
+   - Button highlights correctly
+   - Previous tab content remains in DOM
+   - New tab content gets added to the previous one
 
-## Debug информация
+## Debug Information
 
 - Svelte: 5.0.0
 - SvelteKit: 2.9.0 
 - Node: 18.19.1
-- Browser: Chrome/Firefox (воспроизводится в обоих)
+- Browser: Chrome/Firefox (reproduced in both)
 
-## Логи консоли
+## Console Logs (Historical)
 
 ```
 Tab change requested: network-tools current: http-client
 Tab changed to: network-tools
-   Has HTTP Client: true  <- Проблема: должно быть false
+   Has HTTP Client: true  <- Problem: should be false
    Has Network Tools: true
 ❌ STILL BROKEN: Tab switching issue persists
 ```
 
-## ✅ РЕШЕНО: CSS-based подход
+## ✅ FINAL SOLUTION: CSS-based Approach
 
-### Примененное решение
+### Applied Solution
 
-Проблема была решена заменой условного рендеринга на CSS-based переключение видимости:
+The problem was completely solved by replacing conditional rendering with CSS-based visibility switching:
 
 ```svelte
-<!-- ❌ Старый подход (не работает в Svelte 5) -->
+<!-- ❌ Old approach (doesn't work in Svelte 5) -->
 {#key activeTab}
   {#if activeTab === 'http-client'}
     <HttpClient key="http-client" />
@@ -105,7 +105,7 @@ Tab changed to: network-tools
   {/if}
 {/key}
 
-<!-- ✅ Новый подход (работает идеально) -->
+<!-- ✅ New approach (works perfectly) -->
 <div class="tab-content" class:active={activeTab === 'http-client'} data-tab="http-client">
   <HttpClient />
 </div>
@@ -119,7 +119,7 @@ Tab changed to: network-tools
 </div>
 ```
 
-### CSS стили для переключения
+### CSS Styles for Switching
 
 ```css
 .tab-content {
@@ -133,27 +133,28 @@ Tab changed to: network-tools
 }
 ```
 
-### Преимущества CSS-based подхода
+### Benefits of CSS-based Approach
 
-1. ✅ **Совместимость с Svelte 5**: Не использует условный рендеринг
-2. ✅ **Производительность**: Компоненты создаются один раз и остаются в DOM
-3. ✅ **Сохранение состояния**: Состояние компонентов сохраняется при переключении
-4. ✅ **Простота**: Более простой и понятный код
-5. ✅ **Стабильность**: Не зависит от багов условного рендеринга
+1. ✅ **Svelte 5 Compatibility**: Doesn't use conditional rendering
+2. ✅ **Performance**: Components created once and remain in DOM
+3. ✅ **State Preservation**: Component state preserved when switching
+4. ✅ **Simplicity**: Cleaner and more understandable code
+5. ✅ **Stability**: Not dependent on conditional rendering bugs
 
-## Потенциальные решения
+## Alternative Solutions (No Longer Needed)
 
-1. ✅ **CSS-based решение**: Использовать `display: none/block` вместо условного рендеринга - **ПРИМЕНЕНО**
-2. **Downgrade Svelte**: Откатиться на Svelte 4 - **НЕ ТРЕБУЕТСЯ**
-3. **Ждать фикса**: Это известная проблема ранних версий Svelte 5 - **НЕ ТРЕБУЕТСЯ**
+1. ✅ **CSS-based solution**: Use `display: none/block` instead of conditional rendering - **APPLIED**
+2. **Downgrade Svelte**: Roll back to Svelte 4 - **NOT REQUIRED**
+3. **Wait for fix**: This was a known issue in early Svelte 5 versions - **NOT REQUIRED**
 
-## Связанные issues
+## Related Issues
 
 - https://github.com/sveltejs/svelte/issues/...
-- Проблема с реактивностью runes в условных блоках - **ОБОЙДЕНА**
+- Issue with runes reactivity in conditional blocks - **BYPASSED**
 
 ---
 
-**Статус**: ✅ **РЕШЕНО** с помощью CSS-based подхода  
-**Дата решения**: 2025-09-16  
-**Автор**: AI Assistant
+**Status**: ✅ **COMPLETELY RESOLVED** with CSS-based approach  
+**Resolution Date**: 2025-09-16  
+**Author**: AI Assistant
+**Final Implementation**: CSS visibility switching instead of conditional rendering
