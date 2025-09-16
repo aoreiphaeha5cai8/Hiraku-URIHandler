@@ -16,6 +16,7 @@
   let lastAttemptedUrl = $state("");
   let consecutiveFailures = $state(0);
   let isBlocked = $state(false);
+  let userHasInteracted = $state(false); // Track if user has clicked any button
 
   const popularStreams = [
     // Original working streams
@@ -112,6 +113,8 @@
   ];
 
   async function playRadio(retryWithFallback: boolean = false) {
+    userHasInteracted = true; // Track user interaction
+    
     if (!radioUrl.trim()) {
       console.log("Radio Error: Please enter a radio stream URL");
       return;
@@ -404,6 +407,7 @@
   }
 
   function stopRadio() {
+    userHasInteracted = true; // Track user interaction
     console.log('Stopping radio playback');
     
     if (audioElement) {
@@ -434,6 +438,8 @@
   }
   
   function playRadioImmediately() {
+    userHasInteracted = true; // Track user interaction
+    
     if (!radioUrl.trim()) {
       console.log("Radio Error: Please enter a radio stream URL");
       return;
@@ -726,6 +732,7 @@
               min="0" 
               max="100" 
               bind:value={volume} 
+              oninput={() => userHasInteracted = true}
               class="volume-slider"
             />
             <span class="volume-display">{volume}%</span>
