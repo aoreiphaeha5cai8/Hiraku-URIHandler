@@ -67,6 +67,7 @@
     console.log('Tab change requested:', tabId, 'current:', activeTab);
     activeTab = tabId;
     console.log('Tab changed to:', activeTab);
+    console.log('✅ CSS-BASED: Tab switching uses CSS visibility, all components stay in DOM');
   }
   
   function handleSettingsClick() {
@@ -601,19 +602,18 @@
   <TabNavigation {tabs} {activeTab} onTabChange={handleTabChange} onSettingsClick={handleSettingsClick} />
 
   <main class="app-main">
-    <!-- Debug: Current tab is {activeTab} -->
-    {#key activeTab}
-      {#if activeTab === 'http-client'}
-        <HttpClient key="http-client" />
-      {:else if activeTab === 'network-tools'}
-        <NetworkTools key="network-tools" />
-      {:else if activeTab === 'radio-player'}
-        <div>Rendering RadioPlayer component...</div>
-        <RadioPlayer key="radio-player" />
-      {:else}
-        <div>Unknown tab: {activeTab}</div>
-      {/if}
-    {/key}
+    <!-- CSS-based tab switching solution -->
+    <div class="tab-content" class:active={activeTab === 'http-client'} data-tab="http-client">
+      <HttpClient />
+    </div>
+    
+    <div class="tab-content" class:active={activeTab === 'network-tools'} data-tab="network-tools">
+      <NetworkTools />
+    </div>
+    
+    <div class="tab-content" class:active={activeTab === 'radio-player'} data-tab="radio-player">
+      <RadioPlayer />
+    </div>
   </main>
 
   <footer class="app-footer">
@@ -1188,6 +1188,17 @@
     flex: 1;
     background: var(--bg-color);
     min-height: calc(100vh - 200px);
+    position: relative;
+  }
+  
+  .tab-content {
+    display: none;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .tab-content.active {
+    display: block;
   }
 
   .app-footer {
