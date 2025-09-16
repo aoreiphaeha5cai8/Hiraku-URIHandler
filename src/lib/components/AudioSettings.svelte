@@ -351,7 +351,7 @@
     text-align: center;
   }
   
-  .dial-group label {
+  .dial-label {
     display: block;
     margin: 0.5rem 0 0.25rem 0;
     font-size: 0.9rem;
