@@ -162,6 +162,8 @@
       // Create or reuse shared AudioContext like breakcorn
       if (!sharedAudioContext) {
         sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Make it globally accessible to prevent context conflicts
+        window.sharedAudioContext = sharedAudioContext;
       }
       
       // Load butterchurn modules dynamically
@@ -543,6 +545,12 @@
     
     // Setup global functions for audio pipeline like breakcorn.ru
     window.initializeAudioPipeline = (audioContext: AudioContext, source: MediaElementAudioSourceNode) => {
+      // Always use the shared context to prevent conflicts
+      if (audioContext !== sharedAudioContext && sharedAudioContext) {
+        console.warn('AudioContext mismatch detected, using shared context');
+        audioContext = sharedAudioContext;
+      }
+      
       if (settingsModal) {
         console.log('Using settings modal audio pipeline');
         return settingsModal.initializeAudioPipeline(audioContext, source);

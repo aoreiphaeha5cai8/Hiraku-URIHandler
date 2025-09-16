@@ -10,6 +10,8 @@
   let audioContext: AudioContext | null = null;
   let analyser: AnalyserNode | null = null;
   let audioDataArray: Uint8Array | null = null;
+  let currentAudioSource: MediaElementAudioSourceNode | null = null;
+  let isAudioAnalysisSetup: boolean = false;
   
   // Playback control - unified system
   let currentPlaybackId = 0; // Track current playback session to prevent conflicts
@@ -269,7 +271,12 @@
         };
         
         console.log(`Session ${sessionId}: Can play, setting up audio analysis`);
-        setupAudioAnalysis();
+        // Only setup audio analysis if not already done
+        if (!isAudioAnalysisSetup) {
+          setupAudioAnalysis();
+        } else {
+          console.log(`Session ${sessionId}: Audio analysis already setup, skipping`);
+        }
       }
     };
     audioElement.addEventListener('canplay', onCanPlay);
@@ -532,6 +539,17 @@
           }
         });
         
+        // Disconnect audio source if exists
+        if (currentAudioSource) {
+          try {
+            currentAudioSource.disconnect();
+            console.log('Audio source disconnected');
+          } catch (e) {
+            console.warn('Error disconnecting audio source:', e);
+          }
+          currentAudioSource = null;
+        }
+        
         // Stop playback
         audioElement.pause();
         audioElement.src = "";
@@ -539,6 +557,7 @@
         
         console.log('Audio element cleaned up');
         audioElement = null;
+        isAudioAnalysisSetup = false;
       }
       
       // Disconnect from Butterchurn
@@ -624,11 +643,25 @@
       return;
     }
     
+    // Prevent multiple setups for the same element
+    if (isAudioAnalysisSetup && currentAudioSource) {
+      console.log('Audio analysis already setup for current element');
+      return;
+    }
+    
     try {
-      // Use singleton AudioContext to prevent conflicts
-      if (!audioContext || audioContext.state === 'closed') {
+      // Use global shared AudioContext from the main page to prevent conflicts
+      if (typeof window !== 'undefined' && window.sharedAudioContext) {
+        audioContext = window.sharedAudioContext;
+        console.log('Using shared AudioContext from global scope');
+      } else if (!audioContext || audioContext.state === 'closed') {
         console.log('Creating new AudioContext for audio analysis');
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Store as global shared context
+        if (typeof window !== 'undefined') {
+          window.sharedAudioContext = audioContext;
+        }
       }
       
       // Resume context if suspended (autoplay policy)
@@ -638,24 +671,24 @@
       }
       
       // Create audio source from element (only once per element)
-      let source;
       try {
-        source = audioContext.createMediaElementSource(audioElement);
+        currentAudioSource = audioContext.createMediaElementSource(audioElement);
         console.log('Created MediaElementSource for audio analysis');
       } catch (error) {
-        if (error.message.includes('already connected')) {
-          console.log('Audio element already has a source node, reusing existing connection');
-          return; // Element already connected, no need to setup again
+        if (error.message.includes('already connected') || error.message.includes('already associated')) {
+          console.log('Audio element already has a source node, skipping source creation');
+          isAudioAnalysisSetup = true;
+          return;
         }
         throw error;
       }
       
-      source.connect(audioContext.destination);
+      currentAudioSource.connect(audioContext.destination);
       
       // Initialize audio pipeline with compressor if available
-      let finalSource = source;
+      let finalSource = currentAudioSource;
       if (typeof window !== 'undefined' && window.initializeAudioPipeline) {
-        finalSource = window.initializeAudioPipeline(audioContext, source) || source;
+        finalSource = window.initializeAudioPipeline(audioContext, currentAudioSource) || currentAudioSource;
         console.log('Audio pipeline with compressor initialized');
       }
       
@@ -664,8 +697,12 @@
         window.connectButterchurnAudio(finalSource);
         console.log('Audio source connected to Butterchurn');
       }
+      
+      isAudioAnalysisSetup = true;
+      console.log('Audio analysis setup completed successfully');
     } catch (error) {
       console.warn('Failed to setup audio analysis:', error);
+      isAudioAnalysisSetup = false;
     }
   }
   
