@@ -136,7 +136,10 @@
       return false;
     }
 
-    // Generate new playback session ID to prevent conflicts
+    // Stop current playback first with proper cleanup (without changing session ID)
+    await stopRadio(true); // Force stop with cleanup
+    
+    // Generate new playback session ID AFTER stopping previous playback
     currentPlaybackId++;
     const sessionId = currentPlaybackId;
     
@@ -146,18 +149,15 @@
       immediate: options.immediate 
     });
     
-    // Always stop current playback first with proper cleanup
-    await stopRadio(true); // Force stop with cleanup
-    
     // Small delay unless immediate playback requested
     if (!options.immediate) {
       await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    // Check if this session is still active (not cancelled by newer request)
-    if (sessionId !== currentPlaybackId) {
-      console.log(`Playback session ${sessionId} cancelled (newer session started)`);
-      return false;
+      
+      // Check if this session is still active after delay
+      if (sessionId !== currentPlaybackId) {
+        console.log(`Playback session ${sessionId} cancelled during delay`);
+        return false;
+      }
     }
 
     try {
@@ -518,10 +518,7 @@
     
     isCleaningUp = true;
     
-    // Increment playback ID to cancel any pending operations
-    currentPlaybackId++;
-    
-    console.log(`Stopping radio playback (session ${currentPlaybackId})`);
+    console.log(`Stopping radio playback`);
     
     try {
       // Stop and cleanup audio element
