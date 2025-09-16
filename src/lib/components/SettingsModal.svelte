@@ -1,5 +1,37 @@
 <script lang="ts">
   import AudioSettings from './AudioSettings.svelte';
+  import ButterchurmControls from './ButterchurmControls.svelte';
+  
+  interface Props {
+    // Butterchurn props
+    presetKeys?: string[];
+    presetIndex?: number;
+    presetRandom?: boolean;
+    presetCycle?: boolean;
+    presetCycleLength?: number;
+    butterchurnVisualizer?: any;
+    onNextPreset?: (blendTime?: number) => void;
+    onPrevPreset?: (blendTime?: number) => void;
+    onSelectPreset?: (index: number) => void;
+    onToggleRandom?: () => void;
+    onToggleCycle?: () => void;
+    onCycleLengthChange?: (length: number) => void;
+  }
+  
+  let {
+    presetKeys = [],
+    presetIndex = 0,
+    presetRandom = true,
+    presetCycle = true,
+    presetCycleLength = 15,
+    butterchurnVisualizer = null,
+    onNextPreset = () => {},
+    onPrevPreset = () => {},
+    onSelectPreset = () => {},
+    onToggleRandom = () => {},
+    onToggleCycle = () => {},
+    onCycleLengthChange = () => {}
+  }: Props = $props();
   
   let audioSettingsRef: AudioSettings = $state();
   let isOpen = $state(false);
@@ -41,8 +73,22 @@
         
         <AudioSettings bind:this={audioSettingsRef} />
         
+        <ButterchurmControls 
+          {presetKeys}
+          {presetIndex}
+          {presetRandom}
+          {presetCycle}
+          {presetCycleLength}
+          {butterchurnVisualizer}
+          {onNextPreset}
+          {onPrevPreset}
+          {onSelectPreset}
+          {onToggleRandom}
+          {onToggleCycle}
+          {onCycleLengthChange}
+        />
+        
         <div class="butterchurn-info">
-          <h3>🌈 Butterchurn Visualizer</h3>
           <p>
             <a href="https://github.com/jberg/butterchurn" target="_blank" rel="noopener noreferrer">
               Butterchurn
@@ -52,14 +98,6 @@
             </a>.
             Licensed under the MIT License.
           </p>
-          <div class="preset-controls">
-            <p><strong>Keyboard Controls:</strong></p>
-            <ul>
-              <li><kbd>Space</kbd> or <kbd>→</kbd> - Next preset</li>
-              <li><kbd>Backspace</kbd> or <kbd>←</kbd> - Previous preset</li>
-              <li><kbd>H</kbd> - Random preset (no blend)</li>
-            </ul>
-          </div>
         </div>
       </div>
       
@@ -171,23 +209,19 @@
   }
   
   .butterchurn-info {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: var(--secondary-bg);
-    border-radius: 12px;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--info-bg);
+    border-radius: 8px;
     border: 1px solid var(--border-color);
   }
   
-  .butterchurn-info h3 {
-    margin: 0 0 1rem 0;
-    color: var(--text-color);
-    font-size: 1.2rem;
-  }
-  
   .butterchurn-info p {
-    margin: 0 0 1rem 0;
+    margin: 0;
     color: var(--text-secondary);
     line-height: 1.6;
+    font-size: 0.9rem;
+    text-align: center;
   }
   
   .butterchurn-info a {
@@ -197,36 +231,6 @@
   
   .butterchurn-info a:hover {
     text-decoration: underline;
-  }
-  
-  .preset-controls {
-    margin-top: 1rem;
-  }
-  
-  .preset-controls p {
-    margin: 0 0 0.5rem 0;
-    font-weight: 600;
-    color: var(--text-color);
-  }
-  
-  .preset-controls ul {
-    margin: 0;
-    padding-left: 1.5rem;
-    color: var(--text-secondary);
-  }
-  
-  .preset-controls li {
-    margin-bottom: 0.25rem;
-  }
-  
-  kbd {
-    background: var(--code-bg);
-    color: var(--text-color);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-family: monospace;
-    border: 1px solid var(--border-color);
   }
   
   .modal-footer {

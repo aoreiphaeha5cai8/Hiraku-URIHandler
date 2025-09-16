@@ -73,6 +73,19 @@
   function handleSettingsClick() {
     settingsModal?.openModal();
   }
+  
+  // Butterchurn control callbacks for settings modal
+  function handleToggleRandom() {
+    presetRandom = !presetRandom;
+  }
+  
+  function handleToggleCycle() {
+    presetCycle = !presetCycle;
+  }
+  
+  function handleCycleLengthChange(length: number) {
+    presetCycleLength = Math.max(5, Math.min(120, length));
+  }
 
   // Theme management
   function applyTheme() {
@@ -621,68 +634,24 @@
   </footer>
 </div>
 
-<!-- Butterchurn Controls like breakcorn.ru -->
-{#if theme === 'butterchurn' && butterchurnVisualizer && presetKeys.length > 0}
-  <div class="butterchurn-controls">
-    <h3>🌈 Butterchurn Visualizer</h3>
-    
-    <div class="preset-nav">
-      <button onclick={() => prevPreset(0.0)} title="Previous preset (← or Backspace)">
-        ←
-      </button>
-      <button onclick={() => nextPreset(0.0)} title="Random preset (H)">
-        🎲
-      </button>
-      <button onclick={() => nextPreset(5.7)} title="Next preset (→ or Space)">
-        →
-      </button>
-    </div>
-    
-    <select 
-      class="preset-select" 
-      bind:value={presetIndex} 
-      onchange={(e) => selectPresetByIndex(parseInt(e.target.value))}
-    >
-      {#each presetKeys as key, i}
-        <option value={i}>
-          {key.length > 40 ? key.substring(0, 40) + '...' : key}
-        </option>
-      {/each}
-    </select>
-    
-    <div class="preset-controls">
-      <div class="preset-control-row">
-        <label>
-          <input type="checkbox" bind:checked={presetRandom} />
-          Random
-        </label>
-      </div>
-      
-      <div class="preset-control-row">
-        <label>
-          <input type="checkbox" bind:checked={presetCycle} />
-          Cycle
-        </label>
-      </div>
-      
-      <div class="preset-control-row">
-        <label for="cycle-length-input">Length:</label>
-        <input 
-          id="cycle-length-input"
-          type="number" 
-          bind:value={presetCycleLength} 
-          min="5" 
-          max="120" 
-          step="1"
-        />
-        <span style="font-size: 0.8rem; opacity: 0.8;">s</span>
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Butterchurn controls are now in the Audio Settings modal -->
 
 <!-- Settings Modal -->
-<SettingsModal bind:this={settingsModal} />
+<SettingsModal 
+  bind:this={settingsModal}
+  {presetKeys}
+  {presetIndex}
+  {presetRandom}
+  {presetCycle}
+  {presetCycleLength}
+  {butterchurnVisualizer}
+  onNextPreset={nextPreset}
+  onPrevPreset={prevPreset}
+  onSelectPreset={selectPresetByIndex}
+  onToggleRandom={handleToggleRandom}
+  onToggleCycle={handleToggleCycle}
+  onCycleLengthChange={handleCycleLengthChange}
+/>
 
 <style>
   :global(:root) {
@@ -932,95 +901,7 @@
     transform: translateY(-1px);
   }
 
-  /* Butterchurn preset controls like breakcorn.ru */
-  :global([data-theme="butterchurn"] .butterchurn-controls) {
-    position: fixed;
-    top: 100px;
-    right: 20px;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 15px;
-    min-width: 300px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  }
-
-  :global([data-theme="butterchurn"] .butterchurn-controls h3) {
-    margin: 0 0 15px 0;
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  :global([data-theme="butterchurn"] .preset-nav) {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    align-items: center;
-  }
-
-  :global([data-theme="butterchurn"] .preset-nav button) {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.25s;
-    min-width: 40px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :global([data-theme="butterchurn"] .preset-nav button:hover) {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-  }
-
-  :global([data-theme="butterchurn"] .preset-select) {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: rgba(255, 255, 255, 0.95) !important;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    margin-bottom: 15px;
-  }
-
-  :global([data-theme="butterchurn"] .preset-controls) {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  :global([data-theme="butterchurn"] .preset-control-row) {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  :global([data-theme="butterchurn"] .preset-control-row label) {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.85rem;
-    min-width: 60px;
-  }
-
-  :global([data-theme="butterchurn"] .preset-control-row input[type="checkbox"]) {
-    width: 16px;
-    height: 16px;
-  }
-
-  :global([data-theme="butterchurn"] .preset-control-row input[type="number"]) {
-    width: 60px;
-    padding: 4px 8px;
-    font-size: 0.85rem;
-  }
+  /* Butterchurn controls are now in the Audio Settings modal */
 
   :global(h1, h2, h3, h4, h5, h6) {
     margin: 0;
