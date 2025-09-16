@@ -602,16 +602,18 @@
 
   <main class="app-main">
     <!-- Debug: Current tab is {activeTab} -->
-    {#if activeTab === 'http-client'}
-      <HttpClient />
-    {:else if activeTab === 'network-tools'}
-      <NetworkTools />
-    {:else if activeTab === 'radio-player'}
-      <div>Rendering RadioPlayer component...</div>
-      <RadioPlayer />
-    {:else}
-      <div>Unknown tab: {activeTab}</div>
-    {/if}
+    {#key activeTab}
+      {#if activeTab === 'http-client'}
+        <HttpClient key="http-client" />
+      {:else if activeTab === 'network-tools'}
+        <NetworkTools key="network-tools" />
+      {:else if activeTab === 'radio-player'}
+        <div>Rendering RadioPlayer component...</div>
+        <RadioPlayer key="radio-player" />
+      {:else}
+        <div>Unknown tab: {activeTab}</div>
+      {/if}
+    {/key}
   </main>
 
   <footer class="app-footer">
