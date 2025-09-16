@@ -33,7 +33,8 @@ export default defineConfig(async () => ({
   // Testing configuration
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: ['src/test-setup.js']
+    environment: 'happy-dom', // Try happy-dom instead of jsdom
+    setupFiles: ['src/test-setup.js'],
+    pool: 'forks'
   }
 }));
