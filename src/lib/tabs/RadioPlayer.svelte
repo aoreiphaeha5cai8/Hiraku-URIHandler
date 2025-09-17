@@ -22,6 +22,7 @@
   let consecutiveFailures = $state(0);
   let isBlocked = $state(false);
   let userHasInteracted = $state(false); // Track if user has clicked any button
+  let isLoading = $state(false); // Track loading state for preloader
   
   // Audio cleanup tracking
   let activeEventHandlers: Map<string, () => void> = new Map();
@@ -151,6 +152,9 @@
       immediate: options.immediate 
     });
     
+    // Show loading state
+    isLoading = true;
+    
     // Small delay unless immediate playback requested
     if (!options.immediate) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -158,6 +162,7 @@
       // Check if this session is still active after delay
       if (sessionId !== currentPlaybackId) {
         console.log(`Playback session ${sessionId} cancelled during delay`);
+        isLoading = false;
         return false;
       }
     }
@@ -215,10 +220,12 @@
           
           clearTimeout(timeoutId);
           isPlaying = true;
+          isLoading = false; // Hide loading state on successful playback
           console.log(`Session ${sessionId}: Playback started successfully`);
           return true;
         } catch (error) {
           clearTimeout(timeoutId);
+          isLoading = false; // Hide loading state on error
           if (sessionId === currentPlaybackId) {
             return handlePlayError(error, options.retryWithFallback, sessionId);
           }
@@ -230,6 +237,7 @@
 
     } catch (error) {
       console.error(`Session ${sessionId}: Radio setup error:`, error);
+      isLoading = false; // Hide loading state on setup error
       if (sessionId === currentPlaybackId) {
         return handlePlayError(error, options.retryWithFallback, sessionId);
       }
@@ -502,6 +510,7 @@
   
   function resetPlayerState() {
     isPlaying = false;
+    isLoading = false;
     currentStation = "";
     streamInfo = {};
     isRetrying = false;
@@ -576,6 +585,7 @@
       console.error('Error during radio cleanup:', error);
     } finally {
       isCleaningUp = false;
+      isLoading = false; // Ensure loading state is cleared
     }
   }
 
@@ -826,11 +836,12 @@
       </div>
     </div>
 
-    {#if isPlaying && currentStation}
+    {#if (isPlaying && currentStation) || isLoading}
       <div class="now-playing">
         <div class="station-header">
-          <h3>🎵 Now Playing:</h3>
-          <div class="volume-control">
+          <h3>🎵 {isLoading ? 'Loading...' : 'Now Playing:'}</h3>
+          {#if !isLoading}
+            <div class="volume-control">
             <label for="volume-slider">Volume:</label>
             <input 
               id="volume-slider"
@@ -841,14 +852,22 @@
               oninput={() => userHasInteracted = true}
               class="volume-slider"
             />
-            <span class="volume-display">{volume}%</span>
-          </div>
+              <span class="volume-display">{volume}%</span>
+            </div>
+          {/if}
         </div>
         
         <div class="station-info">
-          <div class="station-name">{currentStation}</div>
+          {#if isLoading}
+            <div class="loading-container">
+              <div class="spinner"></div>
+              <div class="loading-text">Connecting to radio stream...</div>
+            </div>
+          {:else}
+            <div class="station-name">{currentStation}</div>
+          {/if}
           
-          {#if Object.keys(streamInfo).length > 0}
+          {#if !isLoading && Object.keys(streamInfo).length > 0}
             <div class="stream-details">
               {#if streamInfo.title}
                 <div class="stream-detail">
@@ -1164,6 +1183,35 @@
   .detail-value {
     font-size: 1rem;
     font-weight: 500;
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem 0;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    font-weight: 500;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   .presets-section h3 {
